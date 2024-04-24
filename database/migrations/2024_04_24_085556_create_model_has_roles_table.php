@@ -11,11 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('coupons_download', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('coupon_id')->references('id')->on('coupons');
-            $table->integer('downloads');
-            $table->timestamps();
+        Schema::create('model_has_roles', function (Blueprint $table) {
+            $table->unsignedBigInteger('role_id');
+            $table->string('model_type');
+            $table->unsignedBigInteger('model_id');
+
+            $table->primary(['role_id', 'model_id', 'model_type']);
         });
     }
 
@@ -24,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('coupons_download');
+        Schema::dropIfExists('model_has_roles');
     }
 };

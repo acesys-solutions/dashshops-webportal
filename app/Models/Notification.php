@@ -10,8 +10,25 @@ class Notification extends Model
 {
     use HasFactory;
 
+    protected $table = 'notifications';
+
     protected $fillable = [
-        'title', 'source_id','type','has_read','trash','content','user_id'
+        'user_id',
+        'title',
+        'source_id',
+        'type',
+        'has_read',
+        'trash',
+        'content',
     ];
 
+    /**
+     * Get the user that owns the notification
+     *
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }

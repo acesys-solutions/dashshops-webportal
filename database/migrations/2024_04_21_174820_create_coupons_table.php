@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('coupons', function (Blueprint $table) {
             $table->id();
-            $table->binary('image');
+            $table->binary('image')->nullable();
             $table->string('name');
-            $table->float('price');
-            $table->foreignId('category_id')->references('id')->on('categories');
+            $table->double('price', 8, 2);
+            $table->integer('category_id')->unsigned();
             $table->integer('download_limit');
-            $table->foreignId('retailer_id')->references('id')->on('retailers');
-            $table->float('retail_price');
-            $table->float('discount_now_price');
+            $table->integer('retailer_id')->unsigned();
+            $table->double('retail_price', 8, 2);
+            $table->double('discount_now_price', 8, 2);
             $table->string('discount_percentage');
             $table->dateTime('start_date');
             $table->dateTime('end_date');
@@ -29,9 +29,14 @@ return new class extends Migration
             $table->string('discount_code')->nullable();
             $table->string('offer_type');
             $table->string('approval_status')->default('New');
-            $table->foreignId('created_by')->references('id')->on('users');
-            $table->foreignId('modified_by')->references('id')->on('users');
+            $table->integer('created_by')->unsigned();
+            $table->integer('modified_by')->unsigned();
             $table->timestamps();
+
+            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
+            $table->foreign('retailer_id')->references('id')->on('retailers')->onDelete('cascade');
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('modified_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

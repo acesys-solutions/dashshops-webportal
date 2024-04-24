@@ -11,13 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('coupon_redemption', function (Blueprint $table) {
+        Schema::create('coupon_clicks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('coupon_id')->references('id')->on('coupons');
-            $table->foreignId('user_id')->references('id')->on('users');
-            $table->string('email');
-            $table->string('redemption_code');
+            $table->integer('coupon_id');
+            $table->integer('clicks');
+            $table->string('city')->nullable();
+            $table->string('state')->nullable();
             $table->timestamps();
+
+            $table->foreign('coupon_id')->references('id')->on('coupons');
         });
     }
 
@@ -26,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('coupon_redemption');
+        Schema::dropIfExists('coupon_clicks');
     }
 };

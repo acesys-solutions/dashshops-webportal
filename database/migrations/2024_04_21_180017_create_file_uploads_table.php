@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->boolean('admin')->default(false);
-            $table->timestamp('approved_at')->nullable();
-            $table->foreignId('retailer_id')->nullable();
+        Schema::create('file_uploads', function (Blueprint $table) {
+            $table->id();
+            $table->string('filename');
+            $table->timestamps();
         });
     }
 
@@ -23,9 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            //
-
-        });
+        Schema::dropIfExists('file_uploads');
     }
 };

@@ -11,11 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        //
-        Schema::create('file_uploads', function (Blueprint $table) {
+        Schema::create('login_tokens', function (Blueprint $table) {
             $table->id();
-            $table->string('filename');
+            $table->integer('user_id');
+            $table->string('token');
+            $table->text('device_token')->nullable();
+            $table->string('device_type')->nullable();
             $table->timestamps();
+
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
@@ -24,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('file_uploads');
+        Schema::dropIfExists('login_tokens');
     }
 };

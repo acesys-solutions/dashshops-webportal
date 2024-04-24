@@ -12,10 +12,7 @@ class State extends Model
 
     protected $table = 'states';
     protected $fillable = [
-        'name', 'abbreviation'
+        'name',
+        'abbreviation'
     ];
-
-    public function user(): BelongsTo{
-        return $this->belongsTo(User::class, 'id', 'state');
-    }
 }

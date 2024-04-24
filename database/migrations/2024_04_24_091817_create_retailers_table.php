@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('firstname');
             $table->string('lastname');
             $table->string('phone_number');
-            $table->string('email')->unique();
-            $table->foreignId('type_of_business')->references('id')->on('categories');
+            $table->string('email');
+            $table->integer('type_of_business');
             $table->string('business_hours_open');
             $table->string('business_hours_close');
             $table->string('city')->nullable();
@@ -29,9 +29,19 @@ return new class extends Migration
             $table->string('web_url')->nullable();
             $table->binary('banner_image')->nullable();
             $table->string('password');
-            $table->string('approval_status')->default('New')->nullable();
+            $table->double('longitude')->default(0);
+            $table->double('latitude')->default(0);
+            $table->string('island')->nullable();
+            $table->string('approval_status')->default('New');
             $table->timestamp('approved_at')->nullable();
+            $table->integer('from_mobile')->default(0);
+            $table->integer('created_by');
+            $table->integer('modified_by');
             $table->timestamps();
+
+            $table->foreign('type_of_business')->references('id')->on('categories');
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('modified_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
