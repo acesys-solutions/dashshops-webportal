@@ -16,9 +16,6 @@ return new class extends Migration
             $table->integer('sales_user_id');
             $table->integer('retailer_id');
             $table->timestamps();
-
-            $table->foreign('sales_user_id')->references('id')->on('users');
-            $table->foreign('retailer_id')->references('id')->on('retailers');
         });
     }
 

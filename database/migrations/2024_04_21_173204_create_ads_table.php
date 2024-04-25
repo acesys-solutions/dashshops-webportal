@@ -21,9 +21,6 @@ return new class extends Migration
             $table->bigInteger('created_by');
             $table->bigInteger('modified_by');
             $table->timestamps();
-
-            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('modified_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

@@ -17,9 +17,6 @@ return new class extends Migration
             $table->integer('product_variation_id');
             $table->double('quantity');
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('product_variation_id')->references('id')->on('product_variations')->onDelete('cascade');
         });
     }
 

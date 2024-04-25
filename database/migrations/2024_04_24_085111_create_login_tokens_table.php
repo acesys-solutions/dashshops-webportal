@@ -18,8 +18,6 @@ return new class extends Migration
             $table->text('device_token')->nullable();
             $table->string('device_type')->nullable();
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
