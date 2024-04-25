@@ -11,11 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('coupons_clicks', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('coupon_id')->references('id')->on('coupons');
-            $table->integer('clicks');
-            $table->timestamps();
+        Schema::create('model_has_permissions', function (Blueprint $table) {
+            $table->unsignedBigInteger('permission_id');
+            $table->string('model_type');
+            $table->unsignedBigInteger('model_id');
+
+            $table->primary(['permission_id', 'model_id', 'model_type']);
         });
     }
 
@@ -24,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('coupons_clicks');
+        Schema::dropIfExists('model_has_permissions');
     }
 };
