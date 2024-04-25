@@ -44,6 +44,9 @@ class Retailer extends Authenticatable
         'created_by',
         'modified_by'
     ];
+    protected $hidden = [
+        'password',
+    ];
 
     /**
      * Get the category that the retailer belongs to
