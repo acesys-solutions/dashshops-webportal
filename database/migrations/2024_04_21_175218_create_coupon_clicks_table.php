@@ -18,8 +18,6 @@ return new class extends Migration
             $table->string('city')->nullable();
             $table->string('state')->nullable();
             $table->timestamps();
-
-            $table->foreign('coupon_id')->references('id')->on('coupons');
         });
     }
 

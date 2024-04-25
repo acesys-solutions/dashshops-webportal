@@ -38,10 +38,6 @@ return new class extends Migration
             $table->integer('created_by');
             $table->integer('modified_by');
             $table->timestamps();
-
-            $table->foreign('type_of_business')->references('id')->on('categories');
-            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('modified_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

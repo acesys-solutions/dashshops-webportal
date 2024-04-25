@@ -19,9 +19,6 @@ return new class extends Migration
             $table->string('comments', 191)->nullable();
             $table->string('approval_status', 10)->default('APPROVED');
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('retailer_id')->references('id')->on('retailers')->onDelete('cascade');
         });
     }
 

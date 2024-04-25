@@ -25,9 +25,6 @@ return new class extends Migration
             $table->integer('status')->default(-1);
             $table->integer('category_id');
             $table->timestamps();
-
-            $table->foreign('store_id')->references('id')->on('retailers')->onDelete('cascade');
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
         });
     }
 

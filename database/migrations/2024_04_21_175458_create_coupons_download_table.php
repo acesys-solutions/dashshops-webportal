@@ -18,9 +18,6 @@ return new class extends Migration
             $table->string('coupon_code');
             $table->integer('downloads');
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('coupon_id')->references('id')->on('coupons')->onDelete('cascade');
         });
     }
 

@@ -21,9 +21,6 @@ return new class extends Migration
             $table->string('state')->nullable();
             $table->string('country')->nullable();
             $table->timestamps();
-
-            $table->foreign('ad_id')->references('id')->on('ads')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

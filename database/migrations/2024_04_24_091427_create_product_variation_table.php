@@ -24,8 +24,6 @@ return new class extends Migration
             $table->string('sku', 50)->nullable();
             $table->tinyInteger('status')->default(1);
             $table->timestamps();
-
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
         });
     }
 

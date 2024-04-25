@@ -32,11 +32,6 @@ return new class extends Migration
             $table->integer('created_by')->unsigned();
             $table->integer('modified_by')->unsigned();
             $table->timestamps();
-
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
-            $table->foreign('retailer_id')->references('id')->on('retailers')->onDelete('cascade');
-            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('modified_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

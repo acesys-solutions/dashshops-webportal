@@ -17,9 +17,6 @@ return new class extends Migration
             $table->integer('product_variation_id');
             $table->timestamps();
             $table->dateTime('expired_at');
-
-            $table->foreign('user_id')->references('id')->on('users');
-            $table->foreign('product_variation_id')->references('id')->on('product_variation');
         });
     }
 

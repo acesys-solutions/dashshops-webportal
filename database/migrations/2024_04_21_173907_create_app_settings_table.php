@@ -18,8 +18,6 @@ return new class extends Migration
             $table->tinyInteger('location')->default(1);
             $table->tinyInteger('disable_caching')->default(0);
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
