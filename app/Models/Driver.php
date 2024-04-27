@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Delivery;
 use App\Models\RejectedDelivery;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -30,6 +31,14 @@ class Driver extends Model
         'acceptance_rating' => 'array',
         'bank_details' => 'array',
     ];
+
+    /**
+     * Get the user that owns the driver.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     /**
      * Get the deliveries for the driver.

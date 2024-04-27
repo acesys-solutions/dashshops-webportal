@@ -56,6 +56,14 @@ return [
             'throw' => false,
         ],
 
+        'driver_licence' => [
+            'driver' => 'local',
+            'root' => storage_path('app/driver_licence'),
+            'url' => env('APP_URL').'/storage/driver_licence',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
     ],
 
     /*

@@ -1,26 +1,28 @@
 <?php
 
+use App\Http\Controllers\AdsController;
+use App\Http\Controllers\AppSettingsController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CouponClicksController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\CouponDownloadController;
 use App\Http\Controllers\CouponRedeemController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ForgotPasswordController;
-use App\Http\Controllers\RetailerController;
+use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RatingsController;
+use App\Http\Controllers\RetailerController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VipController;
-use App\Http\Controllers\AdsController;
-use App\Http\Controllers\AppSettingsController;
-use App\Http\Controllers\NotificationsController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\CartController;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -56,7 +58,7 @@ Route::get('/ratings/user/retailer/{user_id}/{retailer_id}', [RatingsController:
 
 Route::get('states/', [StateController::class, 'getAll'])->name('getAll');
 Route::get('states-all/', [StateController::class, 'getAll2'])->name('getAll2');
-Route::get('states/{id}', [StateController::class, 'getById'])->name('find');
+Route::get('states/{id}', [StateController::class, 'getById']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/verifyToken', [AuthController::class, 'updateDeviceToken']);
@@ -116,24 +118,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/downloads/{id}', [CouponDownloadController::class, 'destroy']);
 
     //Users
-    Route::group(['prefix' => '/user', 'as' => 'user.'], function () {
+    Route::group(['prefix' => '/user'], function () {
         Route::get('/users', [UserController::class, 'getAll'])->name('get-all');
-        Route::get('/user', [UserController::class, 'getUser'])->name('find');
-        Route::post('/user/add', [UserController::class, 'createAPI'])->name('create');
-        Route::put('/{id}', [UserController::class, 'updateAPI'])->name('update');
-        Route::delete('/user/{id}', [AuthController::class, 'deleteAccountAPI'])->name('delete');
+        Route::get('/user', [UserController::class, 'getUser']);
+        Route::post('/user/add', [UserController::class, 'createAPI']);
+        Route::put('/{id}', [UserController::class, 'updateAPI']);
+        Route::delete('/user/{id}', [AuthController::class, 'deleteAccountAPI']);
     });
 
     //Retailers
-    Route::group(['prefix' => '/retailers', 'as' => 'retailers.'], function () {
+    Route::group(['prefix' => '/retailers'], function () {
 
         Route::get('/analytics/summary/{retail_id}', [RetailerController::class, 'getAnalyticsSummary'])->name('getAnalyticsSummary');
-        Route::put('/{id}', [RetailerController::class, 'update'])->name('update');
+        Route::put('/{id}', [RetailerController::class, 'update']);
         Route::post('/update-banner', [RetailerController::class, 'updateBanner'])->name('update-banner');
-        Route::delete('/{id}', [RetailerController::class, 'destroyAPI'])->name('delete');
+        Route::delete('/{id}', [RetailerController::class, 'destroyAPI']);
     });
 
-    Route::group(['prefix' => '/products', 'as' => 'products'], function () {
+    Route::group(['prefix' => '/products'], function () {
         Route::post('/update', [
             ProductController::class, 'update'
         ])->name('update-product');
@@ -153,16 +155,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //State
 
-    Route::post('states/add', [StateController::class, 'create'])->name('create');
-    Route::put('states/{id}', [StateController::class, 'update'])->name('update');
-    Route::delete('states/{id}', [StateController::class, 'destroy'])->name('delete');
+    Route::post('states/add', [StateController::class, 'create']);
+    Route::put('states/{id}', [StateController::class, 'update']);
+    Route::delete('states/{id}', [StateController::class, 'destroy']);
 
     //Vip
-    Route::get('vips/', [VipController::class, 'getAll'])->name('getAll');
-    Route::get('vips/{id}', [VipController::class, 'getById'])->name('find');
+    Route::get('vips/', [VipController::class, 'getAll']);
+    Route::get('vips/{id}', [VipController::class, 'getById']);
     Route::get('vips/isvip/{id}', [VipController::class, 'isUserVip']);
-    Route::post('vips/add', [VipController::class, 'create'])->name('create');
-    Route::delete('vips/{id}', [VipController::class, 'destroy'])->name('delete');
+    Route::post('vips/add', [VipController::class, 'create']);
+    Route::delete('vips/{id}', [VipController::class, 'destroy']);
 
 
     //AppSettings
@@ -181,7 +183,7 @@ Route::post('/register-ad-click', [AdsController::class, 'recordClick']);
 
 
 //products
-Route::group(['prefix' => '/products', 'as' => 'products'], function () {
+Route::group(['prefix' => '/products'], function () {
     Route::get('/{id}', [ProductController::class, 'getProduct'])->name('get-product');
     Route::get('/variants/{product_id}', [ProductController::class, 'getProductVariants'])->name('get-product-variants');
     Route::get('/getrelevantproducts/{count}/{category?}/{search?}', [ProductController::class, 'getrelevantproducts']);
@@ -194,16 +196,16 @@ Route::get('/ratings/retailersummary/{retailer_id}', [RatingsController::class, 
 
 
 //Retailers
-Route::group(['prefix' => '/retailers', 'as' => 'retailers.'], function () {
-    Route::get('/getall/{count}/{page}/{category?}/{search?}', [RetailerController::class, 'getRetailers'])->name('index');
-    Route::get('/getallbylocation/{count}/{page}/{category?}/{city?}/{state?}/{search?}', [RetailerController::class, 'getRetailersByLocation'])->name('index');
-    Route::get('/getallbylocationIsland/{count}/{page}/{category?}/{island?}/{city?}/{state?}/{search?}', [RetailerController::class, 'getRetailersByLocationIsland'])->name('index');
-    Route::get('/popular/{count?}/{page?}/{category?}/{city?}/{state?}/{search?}', [RetailerController::class, 'getPopularRetailers'])->name('index');
-    Route::get('/popularbyisland/{count?}/{page?}/{category?}/{island?}/{city?}/{state?}/{search?}', [RetailerController::class, 'getPopularRetailersByIsland'])->name('index');
-    Route::get('/single/{id}', [RetailerController::class, 'show'])->name('find');
+Route::group(['prefix' => '/retailers'], function () {
+    Route::get('/getall/{count}/{page}/{category?}/{search?}', [RetailerController::class, 'getRetailers']);
+    Route::get('/getallbylocation/{count}/{page}/{category?}/{city?}/{state?}/{search?}', [RetailerController::class, 'getRetailersByLocation']);
+    Route::get('/getallbylocationIsland/{count}/{page}/{category?}/{island?}/{city?}/{state?}/{search?}', [RetailerController::class, 'getRetailersByLocationIsland']);
+    Route::get('/popular/{count?}/{page?}/{category?}/{city?}/{state?}/{search?}', [RetailerController::class, 'getPopularRetailers']);
+    Route::get('/popularbyisland/{count?}/{page?}/{category?}/{island?}/{city?}/{state?}/{search?}', [RetailerController::class, 'getPopularRetailersByIsland']);
+    Route::get('/single/{id}', [RetailerController::class, 'show']);
     Route::get('/coupons/{id}/{type}/{search?}', [RetailerController::class, 'getCoupons'])->name('get_retailer_coupons');
     Route::get('/products/{id}/{type}/{search?}', [RetailerController::class, 'getProducts'])->name('get_retailer_products');
-    Route::post('/add', [RetailerController::class, 'storeAPI'])->name('create');
+    Route::post('/add', [RetailerController::class, 'storeAPI']);
     Route::get('getcities/{island}', [RetailerController::class, 'getCitiesApi'])->name('getcities');
     Route::get('getislandfrcity/{city}', [RetailerController::class, 'getIslandFrCityApi'])->name('getislandfrcity');
     Route::get('/getavailablestates', [RetailerController::class, 'getAllAvailableStates']);
@@ -226,3 +228,17 @@ Route::get('/coupons/states-island/{island}/{state?}/{city?}/{category?}/{search
 Route::get('/coupons/zip-code/{zip_code}', [CouponController::class, 'getAllCouponsByZipCode']);
 Route::get('/coupons/all-approved', [CouponController::class, 'getApproved']);
 Route::get('/coupons/by-category/{id}/{type}/{count}/{page}/{search?}', [CouponController::class, 'getAllCouponsByCategory']);
+
+// Driver
+Route::group(['prefix' => '/driver'], function () {
+
+    // Authentication
+    Route::post('/register', [DriverController::class, 'register']);
+    Route::post('/login', [DriverController::class, 'login']);
+
+    // Documents
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/driver-licence', [DriverController::class, 'uploadDriverLicence']);
+    });
+
+});

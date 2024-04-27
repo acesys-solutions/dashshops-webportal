@@ -37,6 +37,7 @@ class User extends Authenticatable
         'zip_code',
         'email',
         'phone_number',
+        'password',
         'user_type',
         'user_status',
         'email_verified_at',
@@ -209,5 +210,13 @@ class User extends Authenticatable
     public function vip(): HasOne
     {
         return $this->hasOne(Vip::class);
+    }
+
+    /**
+     * Get the driver record associated with the user
+     */
+    public function driver(): HasOne
+    {
+        return $this->hasOne(Driver::class);
     }
 }
