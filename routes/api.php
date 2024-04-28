@@ -148,9 +148,9 @@ Route::middleware('auth:sanctum')->group(function () {
     //carts
     Route::post('/carts', [CartController::class, 'add']);
     Route::post('/carts/sync', [CartController::class, 'syncFromApp']);
-    Route::delete('/carts/{id}', [ProductController::class, 'delete']);
-    Route::put('/carts/{id}', [ProductController::class, 'update']);
-    Route::get('/carts', [ProductController::class, 'getUserCart']);
+    Route::delete('/carts/{id}', [CartController::class, 'delete']);
+    Route::put('/carts/{id}', [CartController::class, 'update']);
+    Route::get('/carts', [CartController::class, 'getUserCart']);
 
 
     //State

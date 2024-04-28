@@ -47,7 +47,7 @@ class CartController extends Controller
         $products = json_decode($request->products_variant_ids, true);
         foreach ($products as $product) {
             if (Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->exists()) {
-                $cart = Cart::where(["product_variation_id" => $product, "user_id" => $user->id])->first();
+                $cart = Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->first();
                 $cart->quantity =  (int)$product["quantity"];
                 $cart->save();
             } else {
@@ -121,9 +121,9 @@ class CartController extends Controller
             ->where('product_variation.status','=',1);
     
 
-        $products =
-        $products->orderBy("products.product_name");
-        $products = $products->get();
+        $products = $products->groupBy("cart.id")
+        ->orderBy("products.product_name")
+        ->get();
 
         return response()->json([
             "data" => $products
