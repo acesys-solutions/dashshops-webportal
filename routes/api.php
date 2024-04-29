@@ -239,6 +239,9 @@ Route::group(['prefix' => '/driver'], function () {
     // Documents
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/driver-licence', [DriverController::class, 'uploadDriverLicence']);
+        Route::post('/car-registration', [DriverController::class, 'uploadCarRegistration']);
+        Route::post('/bank-details', [DriverController::class, 'updateBankDetails']);
+        Route::post('/set-hourly-rate', [DriverController::class, 'setHourlyRate']);
     });
 
 });

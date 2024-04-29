@@ -64,6 +64,14 @@ return [
             'throw' => false,
         ],
 
+        'car_registration' => [
+            'driver' => 'local',
+            'root' => storage_path('app/car_registration'),
+            'url' => env('APP_URL').'/storage/car_registration',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
     ],
 
     /*
