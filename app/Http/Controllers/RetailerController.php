@@ -730,6 +730,7 @@ class RetailerController extends Controller
             $retailer->email = is_null($request->email) ? $retailer->email : $request->email;
             $retailer->type_of_business = is_null($request->type_of_business) ? $retailer->type_of_business : $request->type_of_business;
             $retailer->city = is_null($request->city) ? $retailer->city : $request->city;
+            $retailer->phone_number = is_null($request->phone_number) ? $retailer->phone_number : $request->phone_number;
             $retailer->state = is_null($request->state) ? $retailer->state : $request->state;
             $retailer->island = is_null($request->island) ? $retailer->island : $request->island;
             $retailer->zip_code = is_null($request->zip_code) ? $retailer->zip_code : $request->zip_code;
@@ -740,7 +741,6 @@ class RetailerController extends Controller
             $retailer->longitude = is_null($request->longitude) ? $retailer->longitude : $request->longitude;
 
             $retailer->approval_status = is_null($request->approval_status) ? $retailer->approval_status : $request->approval_status;
-            $retailer->password = is_null($request->password) ? $retailer->password : $request->password;
             $retailer->save();
 
             return response()->json([
@@ -783,11 +783,11 @@ class RetailerController extends Controller
                 'banner_image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             ]);
             $retailer = Retailer::find($request->id);
-            if (file_exists(public_path('images/' . $retailer->banner_image))) {
-                unlink(public_path('images/' . $retailer->banner_image));
+            if (file_exists(public_path('images/retailers/' . $retailer->banner_image))) {
+                unlink(public_path('images/retailers/' . $retailer->banner_image));
             }
             $imageName = time() . '.' . $request->banner_image->extension();
-            $request->banner_image->move(public_path('images'), $imageName);
+            $request->banner_image->move(public_path('images/retailers'), $imageName);
             // Update the retailer's logo image
             $retailer->banner_image = $imageName;
             $retailer->save();
