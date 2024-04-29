@@ -232,4 +232,39 @@ class DriverController extends Controller
             'message' => 'Driver not found'
         ], 404);
     }
+
+    /**
+     * Update driver's bank details.
+     */
+    public function updateBankDetails(Request $request)
+    {
+        $request->validate([
+            'beneficiary_name' => 'required|string',
+            'bank_name' => 'required|string',
+            'account_number' => 'required|string',
+            'swift_code' => 'sometimes|string',
+        ]);
+
+        if ($driver = Driver::where('user_id', Auth::id())->first()) {
+            $driver->bank_details = [
+                'beneficiary_name' => $request->beneficiary_name ?? $driver->bank_details['beneficiary_name'],
+                'bank_name' => $request->bank_name ?? $driver->bank_details['bank_name'],
+                'account_number' => $request->account_number ?? $driver->bank_details['account_number'],
+                'swift_code' => $request->swift_code ?? $driver->bank_details['swift_code'],
+            ];
+
+            $driver->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Bank details updated successfully',
+                'data' => new DriverResource($driver),
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver not found'
+        ], 404);
+    }
 }
