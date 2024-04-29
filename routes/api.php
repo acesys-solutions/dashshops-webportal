@@ -122,6 +122,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/users', [UserController::class, 'getAll'])->name('get-all');
         Route::get('/user', [UserController::class, 'getUser']);
         Route::post('/user/add', [UserController::class, 'createAPI']);
+        Route::post('/user/update-photo', [UserController::class, 'updatePhoto']);
         Route::put('/{id}', [UserController::class, 'updateAPI']);
         Route::delete('/user/{id}', [AuthController::class, 'deleteAccountAPI']);
     });
@@ -148,9 +149,9 @@ Route::middleware('auth:sanctum')->group(function () {
     //carts
     Route::post('/carts', [CartController::class, 'add']);
     Route::post('/carts/sync', [CartController::class, 'syncFromApp']);
-    Route::delete('/carts/{id}', [ProductController::class, 'delete']);
-    Route::put('/carts/{id}', [ProductController::class, 'update']);
-    Route::get('/carts', [ProductController::class, 'getUserCart']);
+    Route::delete('/carts/{id}', [CartController::class, 'delete']);
+    Route::put('/carts/{id}', [CartController::class, 'update']);
+    Route::get('/carts', [CartController::class, 'getUserCart']);
 
 
     //State
@@ -218,7 +219,7 @@ Route::post('/clicks/add', [CouponClicksController::class, 'create']);
 //Coupon
 Route::get('/coupons', [CouponController::class, 'index']);
 Route::get('/coupons/getall/{count}/{page}/{search?}', [CouponController::class, 'getAll']);
-Route::get('/coupons/{id}', [CouponController::class, 'getCoupon']);
+Route::get('/coupons/{id}', [CouponController::class, 'getSingleCoupon']);
 Route::get('/coupons/get-offer-type/{type}/{count}/{category?}/{search?}', [CouponController::class, 'getCouponOffer']);
 Route::get('/coupons/get-offer-type-by-location/{type}/{count}/{category?}/{city?}/{state?}/{search?}', [CouponController::class, 'getCouponOffer2']);
 Route::get('/coupons/get-offer-type-by-location-islands/{type}/{count}/{category?}/{island?}/{city?}/{state?}/{search?}', [CouponController::class, 'getCouponOffer3']);

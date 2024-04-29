@@ -40,7 +40,7 @@ class UserController extends Controller
         $total_members = User::where('user_type', '=', 'Consumer')->count();
         $total_app_users = User::where('user_type', '=', 'Consumer')->get();
         $total_sales_users = User::where('user_type', '=', 'Sales User')->get();
-        $total_vip = Vip::where('expiry_date', '>=',date('Y-m-d 23:59:59'))->count();
+        $total_vip = Vip::where('expiry_date', '>=', date('Y-m-d 23:59:59'))->count();
         $total_retailers = Retailer::count();
         return view('pages.addUser', compact(['categories', 'user', 'states', 'total_retailers', 'total_vip', 'total_members', 'total_app_users', 'total_sales_users']));
     }
@@ -50,7 +50,7 @@ class UserController extends Controller
         $user = User::all();
         $states = State::all();
         $total_members = User::where('user_type', '=', 'Consumer')->count();
-        $total_vip = Vip::where('expiry_date', '>=',date('Y-m-d 23:59:59'))->count();
+        $total_vip = Vip::where('expiry_date', '>=', date('Y-m-d 23:59:59'))->count();
         $total_retailers = Retailer::count();
         return view('pages.adminPortal', compact(['categories', 'user', "states", 'total_retailers', 'total_vip', 'total_members']));
     }
@@ -62,7 +62,7 @@ class UserController extends Controller
         $user = User::all();
         $states = State::all();
         $total_members = User::where('user_type', '=', 'Consumer')->count();
-        $total_vip = Vip::where('expiry_date', '>=',date('Y-m-d 23:59:59'))->count();
+        $total_vip = Vip::where('expiry_date', '>=', date('Y-m-d 23:59:59'))->count();
         $total_retailers = Retailer::count();
         return view('pages.edit_user', compact(['categories', 'user', "states", 'total_retailers', 'total_vip', 'total_members']));
     }
@@ -79,12 +79,12 @@ class UserController extends Controller
         $total_app_users = User::where('user_type', '=', 'Consumer')->get();
 
         $total_vip_users = DB::table('vips')
-        ->join('users', 'users.id', '=', 'vips.user_id')
-        ->select('users.*', 'vips.expiry_date', 'vips.updated_at as last_subscription')->get();
+            ->join('users', 'users.id', '=', 'vips.user_id')
+            ->select('users.*', 'vips.expiry_date', 'vips.updated_at as last_subscription')->get();
         $total_sales_users = User::with('state')->where('admin', '=', 2)->get();
-        $total_vip = Vip::where('expiry_date', '>=',date('Y-m-d 23:59:59'))->count();
+        $total_vip = Vip::where('expiry_date', '>=', date('Y-m-d 23:59:59'))->count();
         $total_retailers = Retailer::count();
-        return view('pages.members', compact(['users', 'state', 'states', 'total_retailers', 'total_vip', 'total_members', 'total_app_users','total_vip_users', 'total_sales_users']));
+        return view('pages.members', compact(['users', 'state', 'states', 'total_retailers', 'total_vip', 'total_members', 'total_app_users', 'total_vip_users', 'total_sales_users']));
     }
 
     public function getAll()
@@ -117,15 +117,14 @@ class UserController extends Controller
         $user->firstname = $request->firstname;
         $user->lastname = $request->lastname;
         $user->email = $request->email;
-        $user->username = "";
         $user->phone_number = $request->phone_number;
         $user->city = $request->city;
         $user->state = $request->state;
         $user->zip_code = $request->zip_code;
         $user->admin = $request->admin;
-        if($request->admin == 1){
+        if ($request->admin == 1) {
             $user->user_type = 'Admin';
-        }else{
+        } else {
             $user->user_type = 'Sales User';
         }
         $user->password = Hash::make($request->password);
@@ -135,19 +134,43 @@ class UserController extends Controller
         $data = ([
             'firstname' => $request->firstname,
             'lastname' => $request->lastname,
-            "user_type"=>$user->admin==1?"an admin":"a sales user",
+            "user_type" => $user->admin == 1 ? "an admin" : "a sales user",
             'password' => $request->password,
             'email' => $request->email,
         ]);
 
         Mail::send('emails.sales_user', $data, function ($message) use ($data) {
-            $message->to($data['email'], $data['firstname']. ' '.$data['lastname'])
+            $message->to($data['email'], $data['firstname'] . ' ' . $data['lastname'])
                 ->cc('info@thedashshop.com')
                 ->subject('Welcome to The DashShop')
                 ->from('support@thedashshop.com', 'The DashShop');
         });
 
         return redirect()->back()->withMessage('User Created successfully');
+    }
+
+    public function updatePhoto(Request $request)
+    {
+        $user = $request->user();
+        // Validate the image upload
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+        
+        if (file_exists(public_path('images/' . $user->photo))) {
+            unlink(public_path('images/' . $user->photo));
+        }
+        $imageName = time() . '.' . $request->image->extension();
+        $request->image->move(public_path('images'), $imageName);
+        // Update the retailer's logo image
+        $user_data = User::find($user->id);
+        $user_data->photo = $imageName;
+        $user_data->save();
+
+        return response()->json([
+            "message" => "User Updated",
+            "data" => $imageName,
+        ], 201);
     }
 
     public function createAPI(Request $request)
@@ -178,7 +201,6 @@ class UserController extends Controller
         $user->firstname = $request->firstname;
         $user->lastname = $request->lastname;
         $user->email = $request->email;
-        $user->username = $request->username;
         $user->phone_number = $request->phone_number;
         $user->city = $request->city;
         $user->state = $request->state;
@@ -205,8 +227,8 @@ class UserController extends Controller
             return response()->json([
                 "message" => "Fetch Successful",
                 "data" => $user
-            ],200);
-        }else{
+            ], 200);
+        } else {
             return response()->json([
                 "message" => "User Not Found"
             ], 404);
@@ -243,7 +265,6 @@ class UserController extends Controller
             $user->business_name = is_null($request->business_name) ? $user->business_name : $request->business_name;
             $user->business_address = is_null($request->business_address) ? $user->business_address : $request->business_address;
             $user->firstname = is_null($request->firstname) ? $user->firstname : $request->firstname;
-            $user->username = is_null($request->username) ? $user->username : $request->username;
             $user->lastname = is_null($request->lastname) ? $user->lastname : $request->lastname;
             $user->email = is_null($request->email) ? $user->email : $request->email;
             $user->city = is_null($request->city) ? $user->city : $request->city;

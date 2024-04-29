@@ -53,7 +53,7 @@
 
                 </td>
                 <td class="text-sm">
-                    <a href="{{route('view-product',['id'=>$p->id])}}" target="_blank" data-bs-toggle="tooltip" data-bs-original-title="Preview product">
+                    <a href="" target="_blank" data-bs-toggle="tooltip" data-bs-original-title="Preview product">
                         <i class="fas fa-eye text-secondary"></i>
                     </a>
                     <a href="{{\App::make('url')->to('sellers/products/add?id='.$p->id)}}" target="_blank" class="mx-3" data-bs-toggle="tooltip" data-bs-original-title="Edit product">
