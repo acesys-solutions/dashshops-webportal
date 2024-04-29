@@ -267,4 +267,30 @@ class DriverController extends Controller
             'message' => 'Driver not found'
         ], 404);
     }
+
+    /**
+     * Set driver's hourly delivery rate.
+     */
+    public function setHourlyRate(Request $request)
+    {
+        $request->validate([
+            'rate' => 'required|numeric',
+        ]);
+
+        if ($driver = Driver::where('user_id', Auth::id())->first()) {
+            $driver->hourly_delivery_rate = (float) $request->rate;
+            $driver->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Hourly delivery rate updated successfully',
+                'data' => new DriverResource($driver),
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver not found'
+        ], 404);
+    }
 }
