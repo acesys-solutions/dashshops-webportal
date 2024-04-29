@@ -23,6 +23,7 @@ class Driver extends Model
         'acceptance_rating',
         'bank_details',
         'hourly_delivery_rate',
+        'current_location',
     ];
 
     protected $casts = [
@@ -30,6 +31,7 @@ class Driver extends Model
         'car_reg_details' => 'array',
         'acceptance_rating' => 'array',
         'bank_details' => 'array',
+        'current_location' => 'array',
     ];
 
     /**

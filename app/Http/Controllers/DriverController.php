@@ -119,6 +119,43 @@ class DriverController extends Controller
     }
 
     /**
+     * Updated current driver's location.
+     */
+    public function updateCurrentLocation(Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'city' => 'sometimes|string',
+            'state' => 'sometimes|string',
+            'zip' => 'sometimes|string',
+        ]);
+
+        if ($driver = Driver::where('user_id', Auth::id())->first()) {
+            $driver->current_location = [
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'city' => $request->city ?? $driver->current_location['city'] ?? null,
+                'state' => $request->state ?? $driver->current_location['state'] ?? null,
+                'zip' => $request->zip ?? $driver->current_location['zip'] ?? null,
+            ];
+
+            $driver->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Current location updated successfully',
+                'data' => new DriverResource($driver),
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver not found'
+        ], 404);
+    }
+
+    /**
      * Upload driver's licence.
      */
     public function uploadDriverLicence(Request $request)

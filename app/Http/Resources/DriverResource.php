@@ -24,6 +24,7 @@ class DriverResource extends JsonResource
             'acceptance_rating' => $this->acceptance_rating,
             'bank_details' => $this->bank_details,
             'hourly_delivery_rate' => $this->hourly_delivery_rate,
+            'current_location' => $this->current_location,
             'created_at' => date('Y-m-d H:i:s', strtotime($this->created_at)),
             'updated_at' => date('Y-m-d H:i:s', strtotime($this->updated_at)),
         ];
