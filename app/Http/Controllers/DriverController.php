@@ -18,22 +18,49 @@ class DriverController extends Controller
      */
     public function register(Request $request)
     {
-        $request->validate([
-            'firstname' => 'required|string',
-            'lastname' => 'required|string',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|string',
-            'phone_number' => 'required|string',
+        $rules = [
+            'user_id' => 'sometimes|integer',
             'username' => 'required|string|unique:drivers',
-        ]);
+        ];
 
-        $user = User::create([
-            'firstname' => $request->firstname,
-            'lastname' => $request->lastname,
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
-            'password' => Hash::make($request->password),
-        ]);
+        // validate user details if user_id is not provided
+        if (!$request->filled('user_id')) {
+            $rules = array_merge($rules, [
+                'firstname' => 'required|string',
+                'lastname' => 'required|string',
+                'email' => 'required|email|unique:users',
+                'password' => 'required|string',
+                'phone_number' => 'required|string|unique:users',
+            ]);
+        }
+
+        $request->validate($rules);
+
+        // check if user already exists, else create a new user
+        if ($request->filled('user_id')) {
+            if (!$user = User::find($request->user_id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+        } else {
+            $user = User::create([
+                'firstname' => $request->firstname,
+                'lastname' => $request->lastname,
+                'email' => $request->email,
+                'phone_number' => $request->phone_number,
+                'password' => Hash::make($request->password),
+            ]);
+        }
+
+        // check if user has a driver account
+        if (Driver::where('user_id', $user->id)->exists()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User already has a driver account'
+            ], 400);
+        }
 
         $driver = Driver::create([
             'user_id' => $user->id,
@@ -45,7 +72,7 @@ class DriverController extends Controller
             'hourly_delivery_rate' => 0,
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user->createToken('API TOKEN')->plainTextToken;
 
         return response()->json([
             'status' => true,
@@ -106,8 +133,8 @@ class DriverController extends Controller
 
         if ($driver = Driver::where('user_id', Auth::id())->first()) {
             $old_images = [
-                'front' => $driver->driver_licence['front'],
-                'back' => $driver->driver_licence['back'],
+                'front' => $driver->driver_licence['front'] ?? null,
+                'back' => $driver->driver_licence['back'] ?? null,
             ];
 
             $driver->driver_licence = [
@@ -121,11 +148,11 @@ class DriverController extends Controller
             $driver->save();
 
             // delete previous driver's licence images
-            if ($request->hasFile('front')) {
+            if ($request->hasFile('front') && $old_images['front']) {
                 Storage::delete($old_images['front']);
             }
 
-            if ($request->hasFile('back')) {
+            if ($request->hasFile('back') && $old_images['back']) {
                 Storage::delete($old_images['back']);
             }
 
