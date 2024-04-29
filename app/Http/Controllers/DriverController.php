@@ -119,6 +119,24 @@ class DriverController extends Controller
     }
 
     /**
+     * Get driver's profile.
+     */
+    public function profile()
+    {
+        if ($driver = Driver::where('user_id', Auth::id())->first()) {
+            return response()->json([
+                'status' => true,
+                'data' => new DriverResource($driver),
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver not found'
+        ], 404);
+    }
+
+    /**
      * Updated current driver's location.
      */
     public function updateCurrentLocation(Request $request)
