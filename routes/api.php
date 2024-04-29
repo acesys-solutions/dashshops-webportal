@@ -244,6 +244,7 @@ Route::group(['prefix' => '/driver'], function () {
         Route::post('/car-registration', [DriverController::class, 'uploadCarRegistration']);
         Route::post('/bank-details', [DriverController::class, 'updateBankDetails']);
         Route::post('/set-hourly-rate', [DriverController::class, 'setHourlyRate']);
+        Route::post('/set-availability', [DriverController::class, 'setAvailability']);
     });
 
 });

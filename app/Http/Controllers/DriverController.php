@@ -348,4 +348,30 @@ class DriverController extends Controller
             'message' => 'Driver not found'
         ], 404);
     }
+
+    /**
+     * Set driver's availability status.
+     */
+    public function setAvailability(Request $request)
+    {
+        $request->validate([
+            'available' => 'required|boolean',
+        ]);
+
+        if ($driver = Driver::where('user_id', Auth::id())->first()) {
+            $driver->available = $request->available;
+            $driver->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Availability status updated successfully',
+                'data' => new DriverResource($driver),
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver not found'
+        ], 404);
+    }
 }

@@ -18,6 +18,7 @@ class Driver extends Model
         'user_id',
         'username',
         'approval_status',
+        'available',
         'driver_licence',
         'car_reg_details',
         'acceptance_rating',
@@ -27,6 +28,7 @@ class Driver extends Model
     ];
 
     protected $casts = [
+        'available' => 'boolean',
         'driver_licence' => 'array',
         'car_reg_details' => 'array',
         'acceptance_rating' => 'array',
