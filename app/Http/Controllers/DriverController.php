@@ -30,7 +30,9 @@ class DriverController extends Controller
                 'lastname' => 'required|string',
                 'email' => 'required|email|unique:users',
                 'password' => 'required|string',
-                'phone_number' => 'required|string|unique:users',
+                'phone_number' =>
+                'required|phone|unique:users,phone_number',
+                
             ]);
         }
 
