@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\DeliveryResource;
 use App\Http\Resources\DriverResource;
 use App\Http\Resources\UserResource;
+use App\Models\Delivery;
 use App\Models\Driver;
+use App\Models\Tracking;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -342,6 +345,167 @@ class DriverController extends Controller
         return response()->json([
             'status' => false,
             'message' => 'Driver not found'
+        ], 404);
+    }
+
+    /**
+     * Get all drivers.
+     */
+    public function allDrivers()
+    {
+        $drivers = Driver::paginate(10);
+
+        return response()->json([
+            'status' => true,
+            'data' => $drivers,
+        ], 200);
+    }
+
+    /**
+     * Get driver by ID.
+     */
+    public function getDriver($id)
+    {
+        if ($driver = Driver::find($id)) {
+            return response()->json([
+                'status' => true,
+                'data' => new DriverResource($driver),
+            ], 200);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver not found'
+        ], 404);
+    }
+
+    /**
+     * Get all available drivers.
+     */
+    public function allAvailableDrivers()
+    {
+        $drivers = Driver::where('available', true)->paginate(10);
+
+        return response()->json([
+            'status' => true,
+            'data' => $drivers,
+        ], 200);
+    }
+
+    /**
+     * Get closest available drivers.
+     */
+    public function closestAvailableDrivers(Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        // get all available drivers
+        $drivers = Driver::where('available', true)
+            ->whereNotNull('current_location')
+            ->take(20)
+            ->get();
+
+        // calculate distance between driver and user using Haversine formula
+        foreach ($drivers as $driver) {
+            $theta = $request->longitude - $driver->current_location['longitude'];
+            $distance = sin(deg2rad($request->latitude)) * sin(deg2rad($driver->current_location['latitude'])) + cos(deg2rad($request->latitude)) * cos(deg2rad($driver->current_location['latitude'])) * cos(deg2rad($theta));
+            $distance = acos($distance);
+            $distance = rad2deg($distance);
+            $miles = $distance * 60 * 1.1515;
+            $driver->distance = $miles;
+        }
+
+        // sort drivers by distance
+        $drivers = $drivers->sortBy('distance');
+
+        return response()->json([
+            'status' => true,
+            'data' => $drivers->values()->all(),
+        ], 200);
+    }
+
+    /**
+     * Accept or decline delivery request
+     */
+    public function deliveryRequest(Request $request)
+    {
+        $request->validate([
+            'accept' => 'required|boolean',
+            'sale_id' => 'required|integer,exists:sales,id',
+            'delivery_fee' => 'required|numeric',
+        ]);
+
+        if ($driver = Driver::where('user_id', Auth::id())->first()) {
+            if ($request->accept) {
+                $driver->acceptance_rating['total'] += 1;
+                $driver->acceptance_rating['count'] += 1;
+            } else {
+                $driver->acceptance_rating['count'] += 1;
+            }
+
+            $driver->save();
+
+            $delivery = Delivery::create([
+                'driver_id' => $driver->id,
+                'sale_id' => $request->sale_id,
+                'delivery_fee' => $request->delivery_fee,
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Delivery request ' . ($request->accept ? 'accepted' : 'declined') . ' successfully',
+                'data' => new DeliveryResource($delivery),
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver not found'
+        ], 404);
+    }
+
+    /**
+     * Delivery picked up.
+     */
+    public function pickedUp($id)
+    {
+        if ($delivery = Delivery::find($id)) {
+            $delivery->picked_at = now();
+            $delivery->save();
+
+            // start tracking
+            $tracking = Tracking::create([
+                'delivery_id' => $delivery->id,
+                'latitude' => $delivery->driver->current_location['latitude'],
+                'longitude' => $delivery->driver->current_location['longitude'],
+                'city' => $delivery->driver->current_location['city'],
+                'state' => $delivery->driver->current_location['state'],
+                'zip' => $delivery->driver->current_location['zip'],
+                'location_log' => [
+                    [
+                        'latitude' => $delivery->driver->current_location['latitude'],
+                        'longitude' => $delivery->driver->current_location['longitude'],
+                        'city' => $delivery->driver->current_location['city'],
+                        'state' => $delivery->driver->current_location['state'],
+                        'zip' => $delivery->driver->current_location['zip'],
+                        'timestamp' => now(),
+                    ],
+                ],
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Delivery picked up successfully',
+                'data' => new DeliveryResource($delivery),
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Delivery not found'
         ], 404);
     }
 }

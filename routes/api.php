@@ -237,8 +237,13 @@ Route::group(['prefix' => '/driver'], function () {
     Route::post('/register', [DriverController::class, 'register']);
     Route::post('/login', [DriverController::class, 'login']);
 
-    // Documents
+    Route::get('/all', [DriverController::class, 'allDrivers']);
+    Route::get('/get/{id}', [DriverController::class, 'getDriver']);
+    Route::get('/available', [DriverController::class, 'allAvailableDrivers']);
+    Route::post('/fetch-closest', [DriverController::class, 'closestAvailableDrivers']);
+
     Route::middleware('auth:sanctum')->group(function () {
+        // Profile
         Route::get('/profile', [DriverController::class, 'profile']);
         Route::post('/current-location', [DriverController::class, 'updateCurrentLocation']);
         Route::post('/driver-licence', [DriverController::class, 'uploadDriverLicence']);
@@ -246,6 +251,10 @@ Route::group(['prefix' => '/driver'], function () {
         Route::post('/bank-details', [DriverController::class, 'updateBankDetails']);
         Route::post('/set-hourly-rate', [DriverController::class, 'setHourlyRate']);
         Route::post('/set-availability', [DriverController::class, 'setAvailability']);
+
+        // Delivery
+        Route::post('/delivery-request', [DriverController::class, 'deliveryRequest']);
+        Route::get('/picked-up/{id}', [DriverController::class, 'pickedUp']);
     });
 
 });
