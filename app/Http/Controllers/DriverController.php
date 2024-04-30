@@ -18,55 +18,25 @@ class DriverController extends Controller
      */
     public function register(Request $request)
     {
-        $rules = [
-            'user_id' => 'sometimes|integer',
-            'username' => 'required|string|unique:drivers',
-        ];
+        $request->validate([
+            'firstname' => 'required|string',
+            'lastname' => 'required|string',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|string',
+            'phone_number' => 'required|phone|unique:users,phone_number',
+        ]);
 
-        // validate user details if user_id is not provided
-        if (!$request->filled('user_id')) {
-            $rules = array_merge($rules, [
-                'firstname' => 'required|string',
-                'lastname' => 'required|string',
-                'email' => 'required|email|unique:users',
-                'password' => 'required|string',
-                'phone_number' =>
-                'required|phone|unique:users,phone_number',
-                
-            ]);
-        }
-
-        $request->validate($rules);
-
-        // check if user already exists, else create a new user
-        if ($request->filled('user_id')) {
-            if (!$user = User::find($request->user_id)) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'User not found'
-                ], 404);
-            }
-        } else {
-            $user = User::create([
-                'firstname' => $request->firstname,
-                'lastname' => $request->lastname,
-                'email' => $request->email,
-                'phone_number' => $request->phone_number,
-                'password' => Hash::make($request->password),
-            ]);
-        }
-
-        // check if user has a driver account
-        if (Driver::where('user_id', $user->id)->exists()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'User already has a driver account'
-            ], 400);
-        }
+        $user = User::create([
+            'firstname' => $request->firstname,
+            'lastname' => $request->lastname,
+            'email' => $request->email,
+            'phone_number' => $request->phone_number,
+            'password' => Hash::make($request->password),
+            'user_type' => 'Driver',
+        ]);
 
         $driver = Driver::create([
             'user_id' => $user->id,
-            'username' => $request->username,
             'acceptance_rating' => [
                 'total' => 0,
                 'count' => 0
@@ -93,14 +63,12 @@ class DriverController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'username' => 'required|string',
+            'phone_number' => 'required|phone',
             'password' => 'required|string',
         ]);
 
-        $driver = Driver::where('username', $request->username)->first();
-
-        // authenticate driver if found and password is correct
-        if ($driver && Auth::attempt(['email' => $driver->user->email, 'password' => $request->password])) {
+        // authenticate driver
+        if (Auth::attempt(['phone_number' => $request->phone_number, 'password' => $request->password])) {
             $token = Auth::user()->createToken('API TOKEN')->plainTextToken;
 
             return response()->json([
@@ -109,7 +77,7 @@ class DriverController extends Controller
                 'data' => [
                     'token' => $this->strright($token),
                     'user' => new UserResource(Auth::user()),
-                    'driver' => new DriverResource($driver),
+                    'driver' => new DriverResource(Driver::where('user_id', Auth::id())->first()),
                 ],
             ]);
         }
