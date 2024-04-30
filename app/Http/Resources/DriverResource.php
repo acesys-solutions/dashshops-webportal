@@ -19,6 +19,7 @@ class DriverResource extends JsonResource
             'user_id' => $this->user_id,
             'username' => $this->username,
             'approval_status' => $this->approval_status,
+            'available' => $this->available,
             'driver_licence' => $this->driver_licence,
             'car_reg_details' => $this->car_reg_details,
             'acceptance_rating' => $this->acceptance_rating,
