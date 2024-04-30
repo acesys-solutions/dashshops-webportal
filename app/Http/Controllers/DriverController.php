@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\DeliveryResource;
 use App\Http\Resources\DriverResource;
+use App\Http\Resources\TrackingResource;
 use App\Http\Resources\UserResource;
+use App\Models\Delivery;
 use App\Models\Driver;
+use App\Models\RejectedDelivery;
+use App\Models\Tracking;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,55 +23,25 @@ class DriverController extends Controller
      */
     public function register(Request $request)
     {
-        $rules = [
-            'user_id' => 'sometimes|integer',
-            'username' => 'required|string|unique:drivers',
-        ];
+        $request->validate([
+            'firstname' => 'required|string',
+            'lastname' => 'required|string',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|string',
+            'phone_number' => 'required|phone|unique:users,phone_number',
+        ]);
 
-        // validate user details if user_id is not provided
-        if (!$request->filled('user_id')) {
-            $rules = array_merge($rules, [
-                'firstname' => 'required|string',
-                'lastname' => 'required|string',
-                'email' => 'required|email|unique:users',
-                'password' => 'required|string',
-                'phone_number' =>
-                'required|phone|unique:users,phone_number',
-                
-            ]);
-        }
-
-        $request->validate($rules);
-
-        // check if user already exists, else create a new user
-        if ($request->filled('user_id')) {
-            if (!$user = User::find($request->user_id)) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'User not found'
-                ], 404);
-            }
-        } else {
-            $user = User::create([
-                'firstname' => $request->firstname,
-                'lastname' => $request->lastname,
-                'email' => $request->email,
-                'phone_number' => $request->phone_number,
-                'password' => Hash::make($request->password),
-            ]);
-        }
-
-        // check if user has a driver account
-        if (Driver::where('user_id', $user->id)->exists()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'User already has a driver account'
-            ], 400);
-        }
+        $user = User::create([
+            'firstname' => $request->firstname,
+            'lastname' => $request->lastname,
+            'email' => $request->email,
+            'phone_number' => $request->phone_number,
+            'password' => Hash::make($request->password),
+            'user_type' => 'Driver',
+        ]);
 
         $driver = Driver::create([
             'user_id' => $user->id,
-            'username' => $request->username,
             'acceptance_rating' => [
                 'total' => 0,
                 'count' => 0
@@ -93,14 +68,12 @@ class DriverController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'username' => 'required|string',
+            'phone_number' => 'required|phone',
             'password' => 'required|string',
         ]);
 
-        $driver = Driver::where('username', $request->username)->first();
-
-        // authenticate driver if found and password is correct
-        if ($driver && Auth::attempt(['email' => $driver->user->email, 'password' => $request->password])) {
+        // authenticate driver
+        if (Auth::attempt(['phone_number' => $request->phone_number, 'password' => $request->password])) {
             $token = Auth::user()->createToken('API TOKEN')->plainTextToken;
 
             return response()->json([
@@ -109,7 +82,7 @@ class DriverController extends Controller
                 'data' => [
                     'token' => $this->strright($token),
                     'user' => new UserResource(Auth::user()),
-                    'driver' => new DriverResource($driver),
+                    'driver' => new DriverResource(Driver::where('user_id', Auth::id())->first()),
                 ],
             ]);
         }
@@ -374,6 +347,261 @@ class DriverController extends Controller
         return response()->json([
             'status' => false,
             'message' => 'Driver not found'
+        ], 404);
+    }
+
+    /**
+     * Get all drivers.
+     */
+    public function allDrivers()
+    {
+        $drivers = Driver::paginate(10);
+
+        return response()->json([
+            'status' => true,
+            'data' => $drivers,
+        ], 200);
+    }
+
+    /**
+     * Get driver by ID.
+     */
+    public function getDriver($id)
+    {
+        if ($driver = Driver::find($id)) {
+            return response()->json([
+                'status' => true,
+                'data' => new DriverResource($driver),
+            ], 200);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver not found'
+        ], 404);
+    }
+
+    /**
+     * Get all available drivers.
+     */
+    public function allAvailableDrivers()
+    {
+        $drivers = Driver::where('available', true)->paginate(10);
+
+        return response()->json([
+            'status' => true,
+            'data' => $drivers,
+        ], 200);
+    }
+
+    /**
+     * Get closest available drivers.
+     */
+    public function closestAvailableDrivers(Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        // get all available drivers
+        $drivers = Driver::where('available', true)
+            ->whereNotNull('current_location')
+            ->take(20)
+            ->get();
+
+        // calculate distance between driver and user using Haversine formula
+        foreach ($drivers as $driver) {
+            $theta = $request->longitude - $driver->current_location['longitude'];
+            $distance = sin(deg2rad($request->latitude)) * sin(deg2rad($driver->current_location['latitude'])) + cos(deg2rad($request->latitude)) * cos(deg2rad($driver->current_location['latitude'])) * cos(deg2rad($theta));
+            $distance = acos($distance);
+            $distance = rad2deg($distance);
+            $miles = $distance * 60 * 1.1515;
+            $driver->distance = $miles;
+        }
+
+        // sort drivers by distance
+        $drivers = $drivers->sortBy('distance');
+
+        return response()->json([
+            'status' => true,
+            'data' => $drivers->values()->all(),
+        ], 200);
+    }
+
+    /**
+     * Accept or decline delivery request
+     */
+    public function deliveryRequest(Request $request)
+    {
+        $request->validate([
+            'accept' => 'required|boolean',
+            'sales_id' => 'required|integer|unique:deliveries|exists:sales,id',
+            'delivery_fee' => 'required|numeric',
+        ]);
+
+        if ($driver = Driver::where('user_id', Auth::id())->first()) {
+            if ($request->accept) {
+                $driver->acceptance_rating = [
+                    'total' => $driver->acceptance_rating['total'] + 1,
+                    'count' => $driver->acceptance_rating['count'] + 1,
+                ];
+
+                Delivery::create([
+                    'driver_id' => $driver->id,
+                    'sales_id' => $request->sales_id,
+                    'delivery_fee' => $request->delivery_fee,
+                ]);
+            } else {
+                $driver->acceptance_rating = [
+                    'total' => $driver->acceptance_rating['total'],
+                    'count' => $driver->acceptance_rating['count'] + 1,
+                ];
+
+                // log rejected delivery
+                RejectedDelivery::create([
+                    'driver_id' => $driver->id,
+                    'sales_id' => $request->sales_id,
+                ]);
+            }
+
+            $driver->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Delivery request ' . ($request->accept ? 'accepted' : 'declined') . ' successfully',
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver not found'
+        ], 404);
+    }
+
+    /**
+     * Delivery picked up.
+     */
+    public function pickedUp($id, Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        if ($delivery = Delivery::find($id)) {
+            // check if delivery has been picked up
+            if ($delivery->picked_at) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Delivery has already been picked up'
+                ], 400);
+            }
+
+            $delivery->picked_at = now();
+            $delivery->save();
+
+            // start tracking
+            $tracking = Tracking::create([
+                'delivery_id' => $delivery->id,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'location_log' => [
+                    [
+                        'latitude' => $request->latitude,
+                        'longitude' => $request->longitude,
+                        'timestamp' => now(),
+                    ],
+                ],
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Delivery picked up successfully',
+                'delivery' => new DeliveryResource($delivery),
+                'tracking' => new TrackingResource($tracking),
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Delivery not found'
+        ], 404);
+    }
+
+    /**
+     * Update delivery location.
+     */
+    public function updateLocation($id, Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        if ($delivery = Delivery::find($id)) {
+            // get last tracking
+            $tracking = Tracking::where('delivery_id', $delivery->id)->latest()->first();
+
+            // update tracking
+            $tracking->location_log = array_merge($tracking->location_log, [
+                [
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                    'timestamp' => now(),
+                ],
+            ]);
+            $tracking->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Location updated successfully',
+                'tracking' => new TrackingResource($tracking),
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Delivery not found'
+        ], 404);
+    }
+
+    /**
+     * Delivery dropped off.
+     */
+    public function droppedOff($id, Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        if ($delivery = Delivery::find($id)) {
+            $delivery->delivered_at = now();
+            $delivery->save();
+
+            // update tracking
+            $tracking = Tracking::where('delivery_id', $delivery->id)->latest()->first();
+            $tracking->location_log = array_merge($tracking->location_log, [
+                [
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                    'timestamp' => now(),
+                ],
+            ]);
+            $tracking->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Delivery dropped off successfully',
+                'delivery' => new DeliveryResource($delivery),
+                'tracking' => new TrackingResource($tracking),
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Delivery not found'
         ], 404);
     }
 }
