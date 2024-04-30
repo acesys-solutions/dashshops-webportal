@@ -254,7 +254,13 @@ Route::group(['prefix' => '/driver'], function () {
 
         // Delivery
         Route::post('/delivery-request', [DriverController::class, 'deliveryRequest']);
-        Route::get('/picked-up/{id}', [DriverController::class, 'pickedUp']);
+        Route::post('/picked-up/{id}', [DriverController::class, 'pickedUp']);
+        Route::post('/update-location/{id}', [DriverController::class, 'updateLocation']);
+        Route::get('/delivered/{id}', [DriverController::class, 'delivered']);
+        // Route::get('/cancel-delivery/{id}', [DriverController::class, 'cancelDelivery']);
+        // Route::get('/delivery-history', [DriverController::class, 'deliveryHistory']);
+        // Route::get('/delivery/{id}', [DriverController::class, 'deliveryDetails']);
+
     });
 
 });

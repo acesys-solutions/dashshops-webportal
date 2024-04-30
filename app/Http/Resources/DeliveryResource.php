@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\TrackingResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,8 +23,6 @@ class DeliveryResource extends JsonResource
             'picked_at' => $this->picked_at,
             'delivered_at' => $this->delivered_at,
             'driver' => new DriverResource($this->driver),
-            // 'tracking' => new TrackingResource($this->tracking),
-            // 'rating' => new DriverRatingResource($this->rating),
         ];
     }
 }

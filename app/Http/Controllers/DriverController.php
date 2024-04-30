@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\DeliveryResource;
 use App\Http\Resources\DriverResource;
+use App\Http\Resources\TrackingResource;
 use App\Http\Resources\UserResource;
 use App\Models\Delivery;
 use App\Models\Driver;
+use App\Models\RejectedDelivery;
 use App\Models\Tracking;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -434,30 +436,40 @@ class DriverController extends Controller
     {
         $request->validate([
             'accept' => 'required|boolean',
-            'sale_id' => 'required|integer,exists:sales,id',
+            'sales_id' => 'required|integer|unique:deliveries|exists:sales,id',
             'delivery_fee' => 'required|numeric',
         ]);
 
         if ($driver = Driver::where('user_id', Auth::id())->first()) {
             if ($request->accept) {
-                $driver->acceptance_rating['total'] += 1;
-                $driver->acceptance_rating['count'] += 1;
+                $driver->acceptance_rating = [
+                    'total' => $driver->acceptance_rating['total'] + 1,
+                    'count' => $driver->acceptance_rating['count'] + 1,
+                ];
+
+                Delivery::create([
+                    'driver_id' => $driver->id,
+                    'sales_id' => $request->sales_id,
+                    'delivery_fee' => $request->delivery_fee,
+                ]);
             } else {
-                $driver->acceptance_rating['count'] += 1;
+                $driver->acceptance_rating = [
+                    'total' => $driver->acceptance_rating['total'],
+                    'count' => $driver->acceptance_rating['count'] + 1,
+                ];
+
+                // log rejected delivery
+                RejectedDelivery::create([
+                    'driver_id' => $driver->id,
+                    'sales_id' => $request->sales_id,
+                ]);
             }
 
             $driver->save();
 
-            $delivery = Delivery::create([
-                'driver_id' => $driver->id,
-                'sale_id' => $request->sale_id,
-                'delivery_fee' => $request->delivery_fee,
-            ]);
-
             return response()->json([
                 'status' => true,
                 'message' => 'Delivery request ' . ($request->accept ? 'accepted' : 'declined') . ' successfully',
-                'data' => new DeliveryResource($delivery),
             ], 201);
         }
 
@@ -470,27 +482,34 @@ class DriverController extends Controller
     /**
      * Delivery picked up.
      */
-    public function pickedUp($id)
+    public function pickedUp($id, Request $request)
     {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
         if ($delivery = Delivery::find($id)) {
+            // check if delivery has been picked up
+            if ($delivery->picked_at) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Delivery has already been picked up'
+                ], 400);
+            }
+
             $delivery->picked_at = now();
             $delivery->save();
 
             // start tracking
             $tracking = Tracking::create([
                 'delivery_id' => $delivery->id,
-                'latitude' => $delivery->driver->current_location['latitude'],
-                'longitude' => $delivery->driver->current_location['longitude'],
-                'city' => $delivery->driver->current_location['city'],
-                'state' => $delivery->driver->current_location['state'],
-                'zip' => $delivery->driver->current_location['zip'],
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
                 'location_log' => [
                     [
-                        'latitude' => $delivery->driver->current_location['latitude'],
-                        'longitude' => $delivery->driver->current_location['longitude'],
-                        'city' => $delivery->driver->current_location['city'],
-                        'state' => $delivery->driver->current_location['state'],
-                        'zip' => $delivery->driver->current_location['zip'],
+                        'latitude' => $request->latitude,
+                        'longitude' => $request->longitude,
                         'timestamp' => now(),
                     ],
                 ],
@@ -499,7 +518,84 @@ class DriverController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Delivery picked up successfully',
-                'data' => new DeliveryResource($delivery),
+                'delivery' => new DeliveryResource($delivery),
+                'tracking' => new TrackingResource($tracking),
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Delivery not found'
+        ], 404);
+    }
+
+    /**
+     * Update delivery location.
+     */
+    public function updateLocation($id, Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        if ($delivery = Delivery::find($id)) {
+            // get last tracking
+            $tracking = Tracking::where('delivery_id', $delivery->id)->latest()->first();
+
+            // update tracking
+            $tracking->location_log = array_merge($tracking->location_log, [
+                [
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                    'timestamp' => now(),
+                ],
+            ]);
+            $tracking->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Location updated successfully',
+                'tracking' => new TrackingResource($tracking),
+            ], 201);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Delivery not found'
+        ], 404);
+    }
+
+    /**
+     * Delivery dropped off.
+     */
+    public function droppedOff($id, Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        if ($delivery = Delivery::find($id)) {
+            $delivery->delivered_at = now();
+            $delivery->save();
+
+            // update tracking
+            $tracking = Tracking::where('delivery_id', $delivery->id)->latest()->first();
+            $tracking->location_log = array_merge($tracking->location_log, [
+                [
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                    'timestamp' => now(),
+                ],
+            ]);
+            $tracking->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Delivery dropped off successfully',
+                'delivery' => new DeliveryResource($delivery),
+                'tracking' => new TrackingResource($tracking),
             ], 201);
         }
 
