@@ -54,8 +54,8 @@ class DriverController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Driver registered successfully',
+            'token' => $this->strright($token),
             'data' => [
-                'token' => $this->strright($token),
                 'user' => new UserResource($user),
                 'driver' => new DriverResource($driver),
             ],
@@ -79,8 +79,8 @@ class DriverController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Driver logged in successfully',
+                'token' => $this->strright($token),
                 'data' => [
-                    'token' => $this->strright($token),
                     'user' => new UserResource(Auth::user()),
                     'driver' => new DriverResource(Driver::where('user_id', Auth::id())->first()),
                 ],
