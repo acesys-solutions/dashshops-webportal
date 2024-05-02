@@ -17,6 +17,7 @@ return [
                 'Authentication' => resource_path('swagger/authentication.json'),
                 'Users' => resource_path('swagger/users.json'),
                 'Retailers' => resource_path('swagger/retailers.json'),
+                'Drivers' => resource_path('swagger/drivers.json'),
                 'Products' => resource_path('swagger/products.json'),
                 'Notifications' => resource_path('swagger/notifications.json'),
                 'Ratings' => resource_path('swagger/ratings.json'),
