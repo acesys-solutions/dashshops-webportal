@@ -1,0 +1,1363 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Dashshops Webportal API",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api",
+            "description": "Base URL"
+        }
+    ],
+    "paths": {
+        "/driver/register": {
+            "post": {
+                "summary": "Register a driver",
+                "tags": [
+                    "Authentication"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "firstname": {
+                                        "type": "string",
+                                        "example": "John"
+                                    },
+                                    "lastname": {
+                                        "type": "string",
+                                        "example": "Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "example": "john@doe.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "password123"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "example": "+2348110203040"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Driver registered successfully"
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "abcd1243"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "user": {
+                                                    "$ref": "#/components/schemas/User"
+                                                },
+                                                "driver": {
+                                                    "$ref": "#/components/schemas/Driver"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/driver/login": {
+            "post": {
+                "summary": "Driver login",
+                "tags": [
+                    "Authentication"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "phone_number": {
+                                        "type": "string",
+                                        "example": "+2348110203040"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "password123"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Driver logged in successfully"
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "abcd1243"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "user": {
+                                                    "$ref": "#/components/schemas/User"
+                                                },
+                                                "driver": {
+                                                    "$ref": "#/components/schemas/Driver"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/driver/all": {
+            "get": {
+                "summary": "Get all drivers",
+                "tags": [
+                    "Drivers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Driver"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Favorite already exists"
+                    }
+                }
+            }
+        },
+        "/driver/get/{id}": {
+            "get": {
+                "summary": "Get a driver by ID",
+                "tags": [
+                    "Drivers"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the driver",
+                        "required": true,
+                        "schema": {
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Driver"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    }
+                }
+            }
+        },
+        "/driver/available": {
+            "get": {
+                "summary": "Get all available drivers",
+                "tags": [
+                    "Drivers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Driver"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No available drivers"
+                    }
+                }
+            }
+        },
+        "/driver/fetch-closest": {
+            "post": {
+                "summary": "Fetch closest available drivers",
+                "tags": [
+                    "Drivers"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "latitude": {
+                                        "type": "number",
+                                        "example": 7.012731873845726
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "example": 3.6449814677402728
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Driver"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No available driver"
+                    }
+                }
+            }
+        },
+        "/driver/profile": {
+            "get": {
+                "summary": "Get driver profile",
+                "tags": [
+                    "Drivers"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Driver"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    }
+                }
+            }
+        },
+        "/driver/current-location": {
+            "post": {
+                "summary": "Update driver current location",
+                "tags": [
+                    "Drivers"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "latitude": {
+                                        "type": "number",
+                                        "example": 7.012731873845726
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "example": 3.6449814677402728
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "example": "Ikeja"
+                                    },
+                                    "state": {
+                                        "type": "string",
+                                        "example": "Lagos"
+                                    },
+                                    "zip": {
+                                        "type": "string",
+                                        "example": "121012"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Current location updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Driver"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    }
+                }
+            }
+        },
+        "/driver/driver-licence": {
+            "post": {
+                "summary": "Upload driver's licence",
+                "tags": [
+                    "Drivers"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "number": {
+                                        "type": "string",
+                                        "example": "dkajfd38374748"
+                                    },
+                                    "expiry_date": {
+                                        "type": "string",
+                                        "example": "2024-10-02"
+                                    },
+                                    "country": {
+                                        "type": "string",
+                                        "example": "US"
+                                    },
+                                    "front": {
+                                        "type": "file"
+                                    },
+                                    "back": {
+                                        "type": "file"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Driver's licence updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Driver"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    }
+                }
+
+            }
+        },
+        "/driver/car-registration": {
+            "post": {
+                "summary": "Upload car registration details",
+                "tags": [
+                    "Drivers"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "image": {
+                                        "type": "file"
+                                    },
+                                    "model": {
+                                        "type": "string",
+                                        "example": "Toyota"
+                                    },
+                                    "model_type": {
+                                        "type": "string",
+                                        "example": "Corolla"
+                                    },
+                                    "year": {
+                                        "type": "string",
+                                        "example": "2024"
+                                    },
+                                    "color": {
+                                        "type": "string",
+                                        "example": "Red"
+                                    },
+                                    "registration_number": {
+                                        "type": "string",
+                                        "example": "GH-YIU89"
+                                    },
+                                    "date_of_registration": {
+                                        "type": "string",
+                                        "example": "2023-10-25"
+                                    },
+                                    "front": {
+                                        "type": "file"
+                                    },
+                                    "back": {
+                                        "type": "file"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Car registration details updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Driver"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    }
+                }
+            }
+        },
+        "/driver/bank-details": {
+            "post": {
+                "summary": "Upload driver's bank details",
+                "tags": [
+                    "Drivers"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "beneficiary_name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "bank_name": {
+                                        "type": "string",
+                                        "example": "Example Bank"
+                                    },
+                                    "account_number": {
+                                        "type": "string",
+                                        "example": "123456789"
+                                    },
+                                    "swift_code": {
+                                        "type": "string",
+                                        "example": "ABCD1234"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bank details updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Driver"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    }
+                }
+            }
+        },
+        "/driver/set-hourly-rate": {
+            "post": {
+                "summary": "Set driver's hourly delivery rate",
+                "tags": [
+                    "Drivers"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "rate": {
+                                        "type": "number",
+                                        "example": 10.5
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Hourly delivery rate updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Driver"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    }
+                }
+            }
+        },
+        "/driver/set-availability": {
+            "post": {
+                "summary": "Set driver's availability",
+                "tags": [
+                    "Drivers"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "available": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Availability updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Driver"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    }
+                }
+            }
+        },
+        "/driver/delivery-request": {
+            "post": {
+                "summary": "Accept/Decline delivery request",
+                "tags": [
+                    "Delivery"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "accept": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "sales_id": {
+                                        "type": "number",
+                                        "example": 1
+                                    },
+                                    "delivery_fee": {
+                                        "type": "number",
+                                        "example": 10
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "properties": {
+                                            "status": {
+                                                "type": "boolean",
+                                                "example": true
+                                            },
+                                            "message": {
+                                                "type": "string",
+                                                "example": "Delivery request accepted/declined successfully"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "401": {
+                            "description": "Unauthorized"
+                        },
+                        "404": {
+                            "description": "Driver not found"
+                        }
+                    }
+                }
+
+            }
+        },
+        "/driver/picked-up/{id}": {
+            "post": {
+                "summary": "Mark delivery as picked up",
+                "tags": [
+                    "Delivery"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the delivery",
+                        "required": true,
+                        "schema": {
+                            "type": "number"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "latitude": {
+                                        "type": "number",
+                                        "example": 7.012731873845726
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "example": 3.6449814677402728
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Delivery marked as picked up successfully"
+                                        },
+                                        "delivery": {
+                                            "$ref": "#/components/schemas/Delivery"
+                                        },
+                                        "tracking": {
+                                            "$ref": "#/components/schemas/Tracking"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Delivery not found"
+                    }
+                }
+
+            }
+        },
+        "/driver/update-location/{id}": {
+            "post": {
+                "summary": "Update delivery's location",
+                "tags": [
+                    "Delivery"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the delivery",
+                        "required": true,
+                        "schema": {
+                            "type": "number"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "latitude": {
+                                        "type": "number",
+                                        "example": 7.012731873845726
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "example": 3.6449814677402728
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Location updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Driver"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    }
+                }
+
+            }
+        },
+        "/driver/delivered/{id}": {
+            "post": {
+                "summary": "Mark delivery as delivered",
+                "tags": [
+                    "Delivery"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the delivery",
+                        "required": true,
+                        "schema": {
+                            "type": "number"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "latitude": {
+                                        "type": "number",
+                                        "example": 7.012731873845726
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "example": 3.6449814677402728
+                                    },
+                                    "timestamp": {
+                                        "type": "string",
+                                        "example": "2024-04-30 14:14:18"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Delivery marked as delivered successfully"
+                                        },
+                                        "delivery": {
+                                            "$ref": "#/components/schemas/Delivery"
+                                        },
+                                        "tracking": {
+                                            "$ref": "#/components/schemas/Tracking"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Delivery not found"
+                    }
+                }
+
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        },
+        "schemas": {
+            "Driver": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "user_id": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "approval_status": {
+                        "type": "string",
+                        "example": "Approved"
+                    },
+                    "available": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "driver_licence": {
+                        "type": "object",
+                        "properties": {
+                            "number": {
+                                "type": "string",
+                                "example": "dkajfd38374748"
+                            },
+                            "expiry_date": {
+                                "type": "string",
+                                "example": "2024-10-02"
+                            },
+                            "country": {
+                                "type": "string",
+                                "example": "US"
+                            },
+                            "front": {
+                                "type": "string",
+                                "example": "driver_licence/I4LeJtvv02gu5kFhf4KnSUOgJCmpH8lDMh2KuycA.png"
+                            },
+                            "back": {
+                                "type": "string",
+                                "example": "driver_licence/sEjkNfhzxcX6BjQ6G8nthy6etJwkZ0xSbYX1hM6F.png"
+                            }
+                        }
+                    },
+                    "car_reg_details": {
+                        "type": "object",
+                        "properties": {
+                            "image": {
+                                "type": "string",
+                                "example": "car_registration/5ib45SyTxoGMjsBoGB73q6dM5VEqknTGyT84Rbvu.png"
+                            },
+                            "model": {
+                                "type": "string",
+                                "example": "Toyota"
+                            },
+                            "model_type": {
+                                "type": "string",
+                                "example": "Corolla"
+                            },
+                            "year": {
+                                "type": "string",
+                                "example": "2024"
+                            },
+                            "color": {
+                                "type": "string",
+                                "example": "Red"
+                            },
+                            "registration_number": {
+                                "type": "string",
+                                "example": "GH-YIU89"
+                            },
+                            "date_of_registration": {
+                                "type": "string",
+                                "example": "2023-10-25"
+                            },
+                            "front": {
+                                "type": "string",
+                                "example": "car_registration/hmib5UgMUzDQtmABDJKeGAJXSmfJIBzUkt7Fh1K1.png"
+                            },
+                            "back": {
+                                "type": "string",
+                                "example": "car_registration/4QsZrl2Rgj5h7s30hsnyq0q5Shj553WdecDgcGJE.png"
+                            }
+                        }
+                    },
+                    "acceptance_rating": {
+                        "total": 15,
+                        "count": 21
+                    },
+                    "bank_details": {
+                        "type": "object",
+                        "properties": {
+                            "beneficiary_name": {
+                                "type": "string",
+                                "example": "John Doe"
+                            },
+                            "bank_name": {
+                                "type": "string",
+                                "example": "Example Bank"
+                            },
+                            "account_number": {
+                                "type": "string",
+                                "example": "123456789"
+                            },
+                            "swift_code": {
+                                "type": "string",
+                                "example": "ABCD1234"
+                            }
+                        }
+                    },
+                    "hourly_delivery_rate": {
+                        "type": "number",
+                        "example": 10.5
+                    },
+                    "current_location": {
+                        "latitude": 7.012731873845726,
+                        "longitude": 3.6449814677402728,
+                        "city": "Ikeja",
+                        "state": "Lagos",
+                        "zip": "121012"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "example": "2024-04-30 14:14:18"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "example": "2024-04-30 14:14:18"
+                    }
+                }
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "business_name": {
+                        "type": "string",
+                        "example": "Example Corp"
+                    },
+                    "business_address": {
+                        "type": "string",
+                        "example": "123, Example Street, Example City"
+                    },
+                    "firstname": {
+                        "type": "string",
+                        "example": "John"
+                    },
+                    "lastname": {
+                        "type": "string",
+                        "example": "Doe"
+                    },
+                    "photo": {
+                        "type": "string",
+                        "example": "photo.jpg"
+                    },
+                    "city": {
+                        "type": "string",
+                        "example": "Example City"
+                    },
+                    "state": {
+                        "type": "string",
+                        "example": "Example State"
+                    },
+                    "zip_code": {
+                        "type": "string",
+                        "example": "12345"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "example@example.com"
+                    },
+                    "phone_number": {
+                        "type": "string",
+                        "example": "+2348010203040"
+                    },
+                    "user_type": {
+                        "type": "string",
+                        "example": "Consumer"
+                    },
+                    "user_status": {
+                        "type": "number",
+                        "example": 0
+                    },
+                    "email_verified_at": {
+                        "type": "string",
+                        "example": "2024-04-19T10:24:54.000000Z"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "example": "2024-04-19T10:24:54.000000Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "example": "2024-04-19T10:24:54.000000Z"
+                    },
+                    "admin": {
+                        "type": "number",
+                        "example": 0
+                    },
+                    "is_vip": {
+                        "type": "number",
+                        "example": 0
+                    },
+                    "approved_at": {
+                        "type": "string",
+                        "example": "2024-04-19T10:24:54.000000Z"
+                    },
+                    "retailer_id": {
+                        "type": "number",
+                        "example": 1
+                    }
+                }
+            },
+            "Delivery": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "sales_id": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "driver_id": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "delivery_fee": {
+                        "type": "number",
+                        "example": 10.5
+                    },
+                    "picked_at": {
+                        "type": "string",
+                        "example": "2024-04-30 14:14:18"
+                    },
+                    "delivered_at": {
+                        "type": "string",
+                        "example": "2024-04-30 14:14:18"
+                    },
+                    "driver": {
+                        "$ref": "#/components/schemas/Driver"
+                    }
+                }
+            },
+            "Tracking": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "delivery_id": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "example": 7.012731873845726
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "example": 3.6449814677402728
+                    },
+                    "location_log": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "latitude": {
+                                    "type": "number",
+                                    "example": 7.012731873845726
+                                },
+                                "longitude": {
+                                    "type": "number",
+                                    "example": 3.6449814677402728
+                                },
+                                "timestamp": {
+                                    "type": "string",
+                                    "example": "2024-04-30 14:14:18"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

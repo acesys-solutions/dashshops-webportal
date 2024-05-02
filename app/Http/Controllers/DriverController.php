@@ -171,8 +171,8 @@ class DriverController extends Controller
                 'number' => $request->number ?? $driver->driver_licence['number'],
                 'expiry_date' => $request->expiry_date ?? $driver->driver_licence['expiry_date'],
                 'country' => $request->country ?? $driver->driver_licence['country'],
-                'front' => $request->hasFile('front') ? $request->file('front')->store('driver_licence') : $driver->driver_licence['front'],
-                'back' => $request->hasFile('back') ? $request->file('back')->store('driver_licence') : $driver->driver_licence['back'],
+                'front' => $request->hasFile('front') ? $request->file('front')->store('driver_licence') : $old_images['front'],
+                'back' => $request->hasFile('back') ? $request->file('back')->store('driver_licence') : $old_images['back'],
             ];
 
             $driver->save();
@@ -341,7 +341,7 @@ class DriverController extends Controller
                 'status' => true,
                 'message' => 'Availability status updated successfully',
                 'data' => new DriverResource($driver),
-            ], 201);
+            ], 200);
         }
 
         return response()->json([
@@ -478,7 +478,7 @@ class DriverController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Delivery request ' . ($request->accept ? 'accepted' : 'declined') . ' successfully',
-            ], 201);
+            ], 200);
         }
 
         return response()->json([
@@ -528,7 +528,7 @@ class DriverController extends Controller
                 'message' => 'Delivery picked up successfully',
                 'delivery' => new DeliveryResource($delivery),
                 'tracking' => new TrackingResource($tracking),
-            ], 201);
+            ], 200);
         }
 
         return response()->json([
@@ -565,7 +565,7 @@ class DriverController extends Controller
                 'status' => true,
                 'message' => 'Location updated successfully',
                 'tracking' => new TrackingResource($tracking),
-            ], 201);
+            ], 200);
         }
 
         return response()->json([
@@ -604,7 +604,7 @@ class DriverController extends Controller
                 'message' => 'Delivery dropped off successfully',
                 'delivery' => new DeliveryResource($delivery),
                 'tracking' => new TrackingResource($tracking),
-            ], 201);
+            ], 200);
         }
 
         return response()->json([
