@@ -386,7 +386,9 @@ class DriverController extends Controller
      */
     public function allAvailableDrivers()
     {
-        $drivers = Driver::where('available', true)->paginate(10);
+        $drivers = Driver::where('available', true)
+            ->where('approval_status', 'Approved')
+            ->paginate(10);
 
         return response()->json([
             'status' => true,
@@ -407,6 +409,7 @@ class DriverController extends Controller
         // get all available drivers
         $drivers = Driver::where('available', true)
             ->whereNotNull('current_location')
+            ->where('approval_status', 'Approved')
             ->take(20)
             ->get();
 
@@ -440,7 +443,12 @@ class DriverController extends Controller
             'delivery_fee' => 'required|numeric',
         ]);
 
-        if ($driver = Driver::where('user_id', Auth::id())->first()) {
+        $driver = Driver::where('user_id', Auth::id())
+            ->where('available', true)
+            ->where('approval_status', 'Approved')
+            ->first();
+
+        if ($driver) {
             if ($request->accept) {
                 $driver->acceptance_rating = [
                     'total' => $driver->acceptance_rating['total'] + 1,
