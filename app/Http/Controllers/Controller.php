@@ -65,7 +65,7 @@ class Controller extends BaseController
         (select id from product_favorites where product_favorites.product_variation_id=product_variation.id and product_favorites.user_id=" . $userid . " limit 0,1) as favorite, 
         retailers.business_name,retailers.banner_image,retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description,
         retailers.longitude,retailers.latitude, retailers.from_mobile, retailers.from_mobile, categories.name as category_name';
-        return DB::raw($str);
+        return $str;
     }
 
     function uniqueArray($array, $property)
@@ -102,7 +102,7 @@ class Controller extends BaseController
         ->join('products', 'products.id', '=', 'product_variation.product_id')
         ->join('retailers', 'retailers.id', '=', 'products.store_id')
         ->join('categories', 'categories.id', '=', 'products.category_id')
-        ->select($this->getSelectDBRawCartDisplay())
+        ->select(DB::raw($this->getSelectDBRawCartDisplay()))
             ->where('products.status', '=', 1)
             ->where('product_variation.status', '=', 1);
 
