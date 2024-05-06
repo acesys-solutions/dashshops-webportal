@@ -307,10 +307,14 @@ class DriverController extends Controller
     {
         $request->validate([
             'rate' => 'required|numeric',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i',
         ]);
 
         if ($driver = Driver::where('user_id', Auth::id())->first()) {
             $driver->hourly_delivery_rate = (float) $request->rate;
+            $driver->start_time = $request->start_time;
+            $driver->end_time = $request->end_time;
             $driver->save();
 
             return response()->json([
@@ -416,6 +420,8 @@ class DriverController extends Controller
             ->whereNotNull('current_location')
             ->where('approval_status', 'Approved')
             ->where('current_location->city', $request->city)
+            ->where('start_time', '<=', now()->format('H:i'))
+            ->where('end_time', '>=', now()->format('H:i'))
             ->get();
 
         // calculate distance between driver and user using Haversine formula
@@ -454,11 +460,22 @@ class DriverController extends Controller
             ->first();
 
         if ($driver) {
+            // check if driver has a pending delivery
+            if (Delivery::where('driver_id', $driver->id)->where('status', 'Pending')->exists()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You have a pending delivery.'
+                ], 400);
+            }
+
             if ($request->accept) {
                 $driver->acceptance_rating = [
                     'total' => $driver->acceptance_rating['total'] + 1,
                     'count' => $driver->acceptance_rating['count'] + 1,
                 ];
+
+                // make driver unavailable
+                $driver->available = false;
 
                 Delivery::create([
                     'driver_id' => $driver->id,
@@ -511,6 +528,7 @@ class DriverController extends Controller
                 ], 400);
             }
 
+            $delivery->status = 'Picked';
             $delivery->picked_at = now();
             $delivery->save();
 
@@ -590,6 +608,7 @@ class DriverController extends Controller
         ]);
 
         if ($delivery = Delivery::find($id)) {
+            $delivery->status = 'Delivered';
             $delivery->delivered_at = now();
             $delivery->save();
 
@@ -603,6 +622,11 @@ class DriverController extends Controller
                 ],
             ]);
             $tracking->save();
+
+            // make driver available
+            $driver = Driver::find($delivery->driver_id);
+            $driver->available = true;
+            $driver->save();
 
             return response()->json([
                 'status' => true,
