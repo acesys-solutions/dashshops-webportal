@@ -3,3 +3,6 @@
 /.ddev
 /.vscode
 /.env
+public/driver_licence
+public/car_registration
+public/storage

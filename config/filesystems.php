@@ -87,6 +87,8 @@ return [
 
     'links' => [
         public_path('storage') => storage_path('app/public'),
+        public_path('driver_licence') => storage_path('app/driver_licence'),
+        public_path('car_registration') => storage_path('app/car_registration'),
     ],
 
 ];
