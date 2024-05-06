@@ -4,9 +4,8 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
-class DriverResource extends JsonResource
+class ClosestDriverResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -42,6 +41,7 @@ class DriverResource extends JsonResource
             'bank_details' => $this->bank_details,
             'hourly_delivery_rate' => $this->hourly_delivery_rate,
             'current_location' => $this->current_location,
+            'distance' => $this->distance ? round($this->distance, 2) : null,
             'created_at' => date('Y-m-d H:i:s', strtotime($this->created_at)),
             'updated_at' => date('Y-m-d H:i:s', strtotime($this->updated_at)),
         ];

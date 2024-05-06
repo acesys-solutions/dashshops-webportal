@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ClosestDriverResource;
 use App\Http\Resources\DeliveryResource;
 use App\Http\Resources\DriverResource;
+use App\Http\Resources\PaginationResource;
 use App\Http\Resources\TrackingResource;
 use App\Http\Resources\UserResource;
 use App\Models\Delivery;
@@ -359,7 +361,8 @@ class DriverController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $drivers,
+            'data' => DriverResource::collection($drivers),
+            'meta' => new PaginationResource($drivers),
         ], 200);
     }
 
@@ -392,7 +395,8 @@ class DriverController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $drivers,
+            'data' => DriverResource::collection($drivers),
+            'meta' => new PaginationResource($drivers),
         ], 200);
     }
 
@@ -428,7 +432,7 @@ class DriverController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $drivers->values()->all(),
+            'data' => ClosestDriverResource::collection($drivers),
         ], 200);
     }
 
