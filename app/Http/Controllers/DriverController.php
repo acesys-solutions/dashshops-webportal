@@ -208,12 +208,12 @@ class DriverController extends Controller
     {
         $request->validate([
             'image' => 'sometimes|image|mimes:jpeg,png,jpg|max:4096', // 4MB
-            'model' => 'sometimes|string',
-            'model_type' => 'sometimes|string',
-            'year' => 'sometimes|string',
-            'color' => 'sometimes|string',
-            'registration_number' => 'sometimes|string',
-            'date_of_registration' => 'sometimes|date',
+            'model' => 'required|string',
+            'model_type' => 'required|string',
+            'year' => 'required|string',
+            'color' => 'required|string',
+            'registration_number' => 'required|string',
+            'date_of_registration' => 'required|date',
             'front' => 'sometimes|image|mimes:jpeg,png,jpg,pdf|max:4096', // 4MB
             'back' => 'sometimes|image|mimes:jpeg,png,jpg,pdf|max:4096',
         ]);
