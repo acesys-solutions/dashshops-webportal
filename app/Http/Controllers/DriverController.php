@@ -406,6 +406,7 @@ class DriverController extends Controller
     public function closestAvailableDrivers(Request $request)
     {
         $request->validate([
+            'city' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
         ]);
@@ -414,7 +415,7 @@ class DriverController extends Controller
         $drivers = Driver::where('available', true)
             ->whereNotNull('current_location')
             ->where('approval_status', 'Approved')
-            ->take(20)
+            ->where('current_location->city', $request->city)
             ->get();
 
         // calculate distance between driver and user using Haversine formula
