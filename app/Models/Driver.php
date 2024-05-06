@@ -23,6 +23,8 @@ class Driver extends Model
         'acceptance_rating',
         'bank_details',
         'hourly_delivery_rate',
+        'start_time',
+        'end_time',
         'current_location',
     ];
 

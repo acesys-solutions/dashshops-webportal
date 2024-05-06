@@ -41,6 +41,8 @@ class ClosestDriverResource extends JsonResource
             'bank_details' => $this->bank_details ?? null,
             'hourly_delivery_rate' => $this->hourly_delivery_rate ?? null,
             'current_location' => $this->current_location ?? null,
+            'start_time' => $this->start_time ? date('H:i', strtotime($this->start_time)) : null,
+            'end_time' => $this->end_time ? date('H:i', strtotime($this->end_time)) : null,
             'distance' => $this->distance ? round($this->distance, 2) : null,
             'created_at' => date('Y-m-d H:i:s', strtotime($this->created_at)),
             'updated_at' => date('Y-m-d H:i:s', strtotime($this->updated_at)),

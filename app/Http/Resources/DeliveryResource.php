@@ -20,6 +20,7 @@ class DeliveryResource extends JsonResource
             'sales_id' => $this->sales_id,
             'driver_id' => $this->driver_id,
             'delivery_fee' => $this->delivery_fee,
+            'status' => $this->status,
             'picked_at' => $this->picked_at,
             'delivered_at' => $this->delivered_at,
             'driver' => new DriverResource($this->driver),

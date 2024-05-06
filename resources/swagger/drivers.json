@@ -673,6 +673,14 @@
                                     "rate": {
                                         "type": "number",
                                         "example": 10.5
+                                    },
+                                    "start_time": {
+                                        "type": "string",
+                                        "example": "09:00"
+                                    },
+                                    "end_time": {
+                                        "type": "string",
+                                        "example": "17:00"
                                     }
                                 }
                             }
@@ -1183,6 +1191,14 @@
                         "type": "number",
                         "example": 10.5
                     },
+                    "start_time": {
+                        "type": "string",
+                        "example": "09:00"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "example": "17:00"
+                    },
                     "current_location": {
                         "latitude": 7.012731873845726,
                         "longitude": 3.6449814677402728,
@@ -1303,6 +1319,10 @@
                     "delivery_fee": {
                         "type": "number",
                         "example": 10.5
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "Pending"
                     },
                     "picked_at": {
                         "type": "string",

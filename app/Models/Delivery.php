@@ -16,6 +16,7 @@ class Delivery extends Model
         'sales_id',
         'driver_id',
         'delivery_fee',
+        'status',
         'picked_at',
         'delivered_at',
     ];
