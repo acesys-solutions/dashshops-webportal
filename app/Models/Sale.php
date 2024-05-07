@@ -16,7 +16,7 @@ class Sale extends Model
 
     protected $fillable = [
         'user_id',
-        'order_ref',
+        'order_id',
         'product_variation_id',
         'retailer_id',
         'business_name',
@@ -29,7 +29,6 @@ class Sale extends Model
         'state',
         'variation_name',
         'status',
-        'shipping_cost'
     ];
 
     /**
