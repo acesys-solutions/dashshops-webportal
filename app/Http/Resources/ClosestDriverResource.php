@@ -17,6 +17,11 @@ class ClosestDriverResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
+            'firstname'=> $this->user->firstname,
+            'lastname' => $this->user->lastname,
+            'email' => $this->user->email,
+            'photo' => $this->user->photo,
+            'phone_number' => $this->user->phone_number,
             'approval_status' => $this->approval_status,
             'available' => $this->available,
             'driver_licence' => $this->driver_licence ? [

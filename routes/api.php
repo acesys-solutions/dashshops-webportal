@@ -19,6 +19,7 @@ use App\Http\Controllers\RetailerController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VipController;
+use App\Http\Controllers\DriverSettingsController;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -260,6 +261,10 @@ Route::group(['prefix' => '/driver'], function () {
         // Route::get('/cancel-delivery/{id}', [DriverController::class, 'cancelDelivery']);
         // Route::get('/delivery-history', [DriverController::class, 'deliveryHistory']);
         // Route::get('/delivery/{id}', [DriverController::class, 'deliveryDetails']);
+
+        //app-settings
+        Route::get('/app-settings', [DriverSettingsController::class, 'getDriverSetting']);
+        Route::put('/app-settings', [DriverSettingsController::class, 'saveSettings']);
 
     });
 

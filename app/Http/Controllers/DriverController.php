@@ -12,6 +12,7 @@ use App\Models\Delivery;
 use App\Models\Driver;
 use App\Models\RejectedDelivery;
 use App\Models\Tracking;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -78,13 +79,26 @@ class DriverController extends Controller
         if (Auth::attempt(['phone_number' => $request->phone_number, 'password' => $request->password])) {
             $token = Auth::user()->createToken('API TOKEN')->plainTextToken;
 
+            if(!Driver::where('user_id', Auth::id())->exists()){
+                $driver = Driver::create([
+                    'user_id' => Auth::id(),
+                    'acceptance_rating' => [
+                        'total' => 0,
+                        'count' => 0
+                    ],
+                    'hourly_delivery_rate' => 0,
+                ]);
+            }else{
+                $driver = Driver::where('user_id', Auth::id())->first();
+            }
+
             return response()->json([
                 'status' => true,
                 'message' => 'Driver logged in successfully',
                 'token' => $this->strright($token),
                 'data' => [
                     'user' => new UserResource(Auth::user()),
-                    'driver' => new DriverResource(Driver::where('user_id', Auth::id())->first()),
+                    'driver' => new DriverResource($driver),
                 ],
             ]);
         }
@@ -121,15 +135,19 @@ class DriverController extends Controller
         $request->validate([
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
-            'city' => 'sometimes|string',
+            'city' => 'required|string',
             'state' => 'sometimes|string',
             'zip' => 'sometimes|string',
         ]);
 
         if ($driver = Driver::where('user_id', Auth::id())->first()) {
+            $bearing = $this->getCurrentDirection(
+                ["lat" => $driver->latitude, "lng" => $driver->longitude], 
+                ["lat" => $request->latitude, "lng" => $request->longitude]);
             $driver->current_location = [
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
+                'bearing'=>$bearing,
                 'city' => $request->city ?? $driver->current_location['city'] ?? null,
                 'state' => $request->state ?? $driver->current_location['state'] ?? null,
                 'zip' => $request->zip ?? $driver->current_location['zip'] ?? null,
@@ -409,25 +427,31 @@ class DriverController extends Controller
      */
     public function closestAvailableDrivers(Request $request)
     {
-        $request->validate([
+         $request->validate([
             'city' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
-        ]);
+        ]); 
+
+        //{city: Las Vegas, latitude: 36.111199, longitude: -115.1401373}
+
+        $longitude = $request->longitude;
+        $latitude = $request->latitude;
+        $city = $request->city;
 
         // get all available drivers
-        $drivers = Driver::where('available', true)
+        $drivers = Driver::with('user')->where('available', true)
             ->whereNotNull('current_location')
-            ->where('approval_status', 'Approved')
-            ->where('current_location->city', $request->city)
+            ->where('drivers.approval_status', 'Approved')
+            ->where('current_location->city', $city)
             ->where('start_time', '<=', now()->format('H:i'))
             ->where('end_time', '>=', now()->format('H:i'))
             ->get();
 
         // calculate distance between driver and user using Haversine formula
         foreach ($drivers as $driver) {
-            $theta = $request->longitude - $driver->current_location['longitude'];
-            $distance = sin(deg2rad($request->latitude)) * sin(deg2rad($driver->current_location['latitude'])) + cos(deg2rad($request->latitude)) * cos(deg2rad($driver->current_location['latitude'])) * cos(deg2rad($theta));
+            $theta = $longitude - $driver->current_location['longitude'];
+            $distance = sin(deg2rad($latitude)) * sin(deg2rad($driver->current_location['latitude'])) + cos(deg2rad($latitude)) * cos(deg2rad($driver->current_location['latitude'])) * cos(deg2rad($theta));
             $distance = acos($distance);
             $distance = rad2deg($distance);
             $miles = $distance * 60 * 1.1515;

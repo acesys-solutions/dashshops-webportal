@@ -44,7 +44,6 @@ class CartController extends Controller
 
     function syncFromApp(Request $request){
         $user = $request->user();
-        Log::info($request->products_variant_ids);
         $products = json_decode($request->products_variant_ids, true);
         foreach ($products as $product) {
             if (Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->exists()) {

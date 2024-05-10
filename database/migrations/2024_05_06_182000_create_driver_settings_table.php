@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('driver_settings', function (Blueprint $table) {
             $table->id();
+            $table->integer('user_id');
+            $table->tinyInteger('push_notification')->default(1);
+            $table->tinyInteger('location')->default(1);
+            $table->tinyInteger('disable_caching')->default(0);
             $table->timestamps();
         });
     }
