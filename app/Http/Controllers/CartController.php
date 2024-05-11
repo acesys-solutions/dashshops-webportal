@@ -48,8 +48,11 @@ class CartController extends Controller
         foreach ($products as $product) {
             if (Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->exists()) {
                 $cart = Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->first();
-                $cart->quantity =  (int)$product["quantity"];
-                $cart->save();
+                if((int)$product["quantity"]  != 0){
+                    $cart->quantity =  (int)$product["quantity"];
+                    $cart->save();
+                }
+                
             } else {
                 
                 Cart::create([
@@ -115,7 +118,7 @@ class CartController extends Controller
             ->join('products', 'products.id', '=', 'product_variation.product_id')
             ->join('retailers', 'retailers.id', '=', 'products.store_id')
             ->join('categories', 'categories.id', '=', 'products.category_id')
-            ->select($this->getSelectDBRawCartDisplay())
+            ->select(DB::raw("cart.quantity, ".$this->getSelectDBRawCartDisplay()))
             ->where('cart.user_id', '=', $user->id)
             ->where('products.status','=',1)
             ->where('product_variation.status','=',1);

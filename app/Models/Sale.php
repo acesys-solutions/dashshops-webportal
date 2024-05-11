@@ -50,4 +50,22 @@ class Sale extends Model
     {
         return $this->belongsTo(Retailer::class,'retailer_id');
     }
+
+    /**
+     * Get the sale order that the sales belongs to
+     *
+     * @return BelongsTo
+     */
+    public function sale_order(): BelongsTo
+    {
+        return $this->belongsTo(SaleOrder::class, 'order_id');
+    }
+
+    /**
+     * Get the sale delivery status for the sal.
+     */
+    public function sale_delivery_status()
+    {
+        return $this->hasMany(SaleDeliveryStatus::class);
+    }
 }

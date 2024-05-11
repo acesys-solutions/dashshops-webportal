@@ -39,7 +39,8 @@ class Controller extends BaseController
             return CouponRedeemed::leftJoin('coupons', 'coupon_redemption.coupon_id', '=', 'coupons.id')->leftJoin('retailers', 'coupons.retailer_id', '=', 'retailers.id')->where('retailers.created_by', \Auth::user()->id)->count();
         }
     }
-    function getSelectDBRawProducts(){
+    function getSelectDBRawProducts()
+    {
         $str = 'products.*, 
         (select min(product_variation.price) where product_variation.product_id = products.id) as min_price,
         (select max(product_variation.price) where product_variation.product_id = products.id) as max_price, 
@@ -65,7 +66,7 @@ class Controller extends BaseController
         (select id from product_favorites where product_favorites.product_variation_id=product_variation.id and product_favorites.user_id=" . $userid . " limit 0,1) as favorite, 
         retailers.business_name,retailers.banner_image,retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description,
         retailers.longitude,retailers.latitude, retailers.from_mobile, retailers.from_mobile, categories.name as category_name';
-        return DB::raw($str);
+        return $str;
     }
 
     function uniqueArray($array, $property)
@@ -96,13 +97,29 @@ class Controller extends BaseController
             return substr($str, $strpos + 1);
         }
     }
+    function getCurrentDirection($previousCoordinates, $currentCoordinates)
+    {
+        $diffLat = $currentCoordinates["lat"] - $previousCoordinates["lat"];
+        $diffLng = $currentCoordinates["lng"] - $previousCoordinates["lng"];
+        $anticlockwiseAngleFromEast = $this->convertToDegrees(
+            atan2($diffLat, $diffLng)
+        );
+        $clockwiseAngleFromNorth = 90 - $anticlockwiseAngleFromEast;
+        return $clockwiseAngleFromNorth;
+        // helper function
+        
+    }
+    function convertToDegrees($radian)
+    {
+        return ($radian * 180) / pi();
+    }
     function getProductDetail($productVariationIds)
     {
         $products = DB::table('product_variation')
-        ->join('products', 'products.id', '=', 'product_variation.product_id')
-        ->join('retailers', 'retailers.id', '=', 'products.store_id')
-        ->join('categories', 'categories.id', '=', 'products.category_id')
-        ->select($this->getSelectDBRawCartDisplay())
+            ->join('products', 'products.id', '=', 'product_variation.product_id')
+            ->join('retailers', 'retailers.id', '=', 'products.store_id')
+            ->join('categories', 'categories.id', '=', 'products.category_id')
+            ->select(DB::raw($this->getSelectDBRawCartDisplay()))
             ->where('products.status', '=', 1)
             ->where('product_variation.status', '=', 1);
 
@@ -112,7 +129,8 @@ class Controller extends BaseController
             }
         });
         $products = $products->groupBy(
-            "product_variation.id");
+            "product_variation.id"
+        );
         $products = $products->orderBy("products.product_name");
         $products = $products->get();
 

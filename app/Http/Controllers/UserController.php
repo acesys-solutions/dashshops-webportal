@@ -269,6 +269,8 @@ class UserController extends Controller
             $user->email = is_null($request->email) ? $user->email : $request->email;
             $user->city = is_null($request->city) ? $user->city : $request->city;
             $user->state = is_null($request->state) ? $user->state : $request->state;
+            $user->latitude = is_null($request->latitude) ? $user->latitude : $request->latitude;
+            $user->longitude = is_null($request->longitude) ? $user->longitude : $request->longitude;
             $user->zip_code = is_null($request->zip_code) ? $user->zip_code : $request->zip_code;
             $user->phone_number = is_null($request->phone_number) ? $user->phone_number : $request->phone_number;
             $user->password = is_null($request->password) ? $user->password : $request->password;
