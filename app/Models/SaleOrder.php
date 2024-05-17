@@ -19,17 +19,25 @@ class SaleOrder extends Model
         'user_id',
         'is_store_pickup',
         'driver_id',
+        'driver_location',
         'status',
         'service_charge',
         'total_discount',
         'total_cost',
+        'total_time',
+        'total_duration',
         'delivery_fee',
         'proposed_route',
+        'driver_location',
+        'address',
+        'city',
+        'state',
     ];
 
     protected $casts = [
         'is_store_pickup' => 'boolean',
-        'proposed_routes' => 'array',
+        'proposed_route' => 'array',
+        'driver_location' => 'array',
     ];
 
     /**
@@ -41,11 +49,19 @@ class SaleOrder extends Model
     }
 
     /**
+     * Get the user that placed the sale order.
+     */
+    public function driver()
+    {
+        return $this->belongsTo(Driver::class);
+    }
+
+    /**
      * Get the deliveries for the driver.
      */
     public function sales()
     {
-        return $this->hasMany(Sale::class);
+        return $this->hasMany(Sale::class,"order_id");
     }
 
 }

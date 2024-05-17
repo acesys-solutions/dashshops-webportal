@@ -20,6 +20,7 @@ use App\Http\Controllers\StateController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VipController;
 use App\Http\Controllers\DriverSettingsController;
+use App\Http\Controllers\SalesController;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -122,6 +123,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::group(['prefix' => '/user'], function () {
         Route::get('/users', [UserController::class, 'getAll'])->name('get-all');
         Route::get('/user', [UserController::class, 'getUser']);
+        Route::get('/user/getuserdetails/{id}', [UserController::class, 'getUserDetails']);
         Route::post('/user/add', [UserController::class, 'createAPI']);
         Route::post('/user/update-photo', [UserController::class, 'updatePhoto']);
         Route::put('/{id}', [UserController::class, 'updateAPI']);
@@ -151,6 +153,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/carts', [CartController::class, 'add']);
     Route::post('/carts/sync', [CartController::class, 'syncFromApp']);
     Route::delete('/carts/{id}', [CartController::class, 'delete']);
+    Route::delete('/carts', [CartController::class, 'deleteUserCart']);
     Route::put('/carts/{id}', [CartController::class, 'update']);
     Route::get('/carts', [CartController::class, 'getUserCart']);
 
@@ -231,6 +234,29 @@ Route::get('/coupons/zip-code/{zip_code}', [CouponController::class, 'getAllCoup
 Route::get('/coupons/all-approved', [CouponController::class, 'getApproved']);
 Route::get('/coupons/by-category/{id}/{type}/{count}/{page}/{search?}', [CouponController::class, 'getAllCouponsByCategory']);
 
+Route::group(
+    ['prefix' => '/orders'],
+    function () {
+        Route::middleware('auth:sanctum')->group(
+            function () {
+                Route::post('/create', [SalesController::class, 'create']);
+                Route::get('/getsalesorder/{id}', [SalesController::class, 'getSaleOrder']);
+                Route::get('/getpendingsalesorder', [SalesController::class, 'getUserPendingSaleOrder']);
+                Route::get('/getusersalesorders', [SalesController::class, 'getUserSaleOrders']);
+                Route::get('/getretailerpendingsalesorder', [SalesController::class, 'getRetailerPendingSaleOrder']);
+                Route::get('/getdrivercurrentschedule', [SalesController::class, 'getDriverCurrentSchedule']);
+                Route::get('/getretailersalesorders', [SalesController::class, 'getRetailerSaleOrders']);
+                Route::get('/getdeliveredsalesorders', [SalesController::class, 'getUserDeliveredSaleOrder']);
+                Route::post('/generatepickupcode', [SalesController::class, 'generatePickupQRCode']);
+                Route::post('/validatepickupcode', [SalesController::class, 'validatePickupCode']);
+                Route::post('/generatedriverdeliverycode', [SalesController::class, 'generateDriverDeliveryQRCode']);
+                Route::post('/validatedriverdeliverycode', [SalesController::class, 'validateDriverDeliveryCode']);
+                Route::post('/generateretailercustomercode', [SalesController::class, 'generateRetailerCustomerQRCode']);
+                Route::post('/validateRetailercustomerpickupcode', [SalesController::class, 'validateRetailerCustomerPickupCode']);
+            }   
+        );
+    }
+);
 // Driver
 Route::group(['prefix' => '/driver'], function () {
 
@@ -246,26 +272,29 @@ Route::group(['prefix' => '/driver'], function () {
     Route::middleware('auth:sanctum')->group(function () {
         // Profile
         Route::get('/profile', [DriverController::class, 'profile']);
+        Route::get('/getprofile/{id}', [DriverController::class, 'driverProfile']);
         Route::post('/current-location', [DriverController::class, 'updateCurrentLocation']);
         Route::post('/driver-licence', [DriverController::class, 'uploadDriverLicence']);
         Route::post('/car-registration', [DriverController::class, 'uploadCarRegistration']);
         Route::post('/bank-details', [DriverController::class, 'updateBankDetails']);
         Route::post('/set-hourly-rate', [DriverController::class, 'setHourlyRate']);
         Route::post('/set-availability', [DriverController::class, 'setAvailability']);
+        Route::post('/verifyToken' , [DriverController::class, 'updateDeviceToken']);
+        Route::post('/fetch-driver-detail', [DriverController::class, 'getDriverDetailsLocation']);
 
         // Delivery
         Route::post('/delivery-request', [DriverController::class, 'deliveryRequest']);
         Route::post('/picked-up/{id}', [DriverController::class, 'pickedUp']);
         Route::post('/update-location/{id}', [DriverController::class, 'updateLocation']);
         Route::get('/delivered/{id}', [DriverController::class, 'delivered']);
+        Route::get('/getpendingdeliveryrequest', [DriverController::class, 'getPendingDeliveryRequest']);
         // Route::get('/cancel-delivery/{id}', [DriverController::class, 'cancelDelivery']);
-        // Route::get('/delivery-history', [DriverController::class, 'deliveryHistory']);
+        Route::post('/delivery-history', [DriverController::class, 'deliveryHistory']);
+        Route::post('/start-delivery', [DriverController::class, 'startDelivery']);
         // Route::get('/delivery/{id}', [DriverController::class, 'deliveryDetails']);
 
         //app-settings
         Route::get('/app-settings', [DriverSettingsController::class, 'getDriverSetting']);
         Route::put('/app-settings', [DriverSettingsController::class, 'saveSettings']);
-
     });
-
 });

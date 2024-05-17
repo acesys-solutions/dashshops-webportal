@@ -235,6 +235,21 @@ class UserController extends Controller
         }
     }
 
+    public function getUserDetails(Request $request, $id)
+    {
+        $user = User::find($id);
+        if ($user) {
+            return response()->json([
+                "message" => "Fetch Successful",
+                "data" => $user
+            ], 200);
+        } else {
+            return response()->json([
+                "message" => "User Not Found"
+            ], 404);
+        }
+    }
+
     public function update(Request $request, $id)
     {
         if (User::where('id', $id)->exists()) {

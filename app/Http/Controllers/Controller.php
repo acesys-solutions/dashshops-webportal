@@ -6,7 +6,9 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use App\Models\CouponClicks;
 use App\Models\CouponDownloads;
+use App\Models\Delivery;
 use App\Models\CouponRedeemed;
+use App\Models\SaleDeliveryStatus;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
 
@@ -57,7 +59,7 @@ class Controller extends BaseController
 
     function getSelectDBRawCartDisplay()
     {
-        $str = 'products.*,product_variation.id as product_variation_id, product_variation.price,product_variation.sale_price,product_variation.on_sale,product_variation.quantity as product_quantity,product_variation.low_stock_value, product_variation.status,
+        $str = 'products.*,product_variation.id as product_variation_id, product_variation.price,product_variation.sale_price,product_variation.on_sale,product_variation.quantity as product_quantity,product_variation.low_stock_value, product_variation.status,product_variation.variant_type_values,
         (select min(product_variation.price) where product_variation.product_id = products.id) as min_price,
         (select max(product_variation.price) where product_variation.product_id = products.id) as max_price, 
         (select min(product_variation.sale_price) where product_variation.product_id = products.id) as min_sale_price,
@@ -135,5 +137,53 @@ class Controller extends BaseController
         $products = $products->get();
 
         return $products;
+    }
+    public function encryptIt($q, $cryptKey = 'rTYpoeiJJHGwyQdsjfsdkjfshdjPoueTGEHkdha')
+    {
+
+        // Remove the base64 encoding from our key
+        //$encryption_key = base64_decode($key);
+        // Generate an initialization vector
+        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
+        // Encrypt the data using AES 256 encryption in CBC mode using our encryption key and initialization vector.
+        $encrypted = openssl_encrypt($q, 'aes-256-cbc', $cryptKey, 0, $iv);
+        // The $iv is just as important as the key for decrypting, so save it with our encrypted data using a unique separator (::)
+        return base64_encode($encrypted . '::' . $iv);
+    }
+
+    public function decryptIt($q, $cryptKey = 'rTYpoeiJJHGwyQdsjfsdkjfshdjPoueTGEHkdha')
+    {
+
+        // Remove the base64 encoding from our key
+        //$encryption_key = base64_decode($key);
+        // To decrypt, split the encrypted data from our IV - our unique separator used was "::"
+        list($encrypted_data, $iv) = explode('::', base64_decode($q), 2);
+        return openssl_decrypt($encrypted_data, 'aes-256-cbc', $cryptKey, 0, $iv);
+    }
+    function updateDeliveryPickup($order_id){
+        if ($delivery = Delivery::where("sales_id", $order_id)->first()) {
+            // check if delivery has been picked up
+            if (!$delivery->picked_at) {
+                $delivery->status = 'Picked';
+                $delivery->picked_at = now();
+                $delivery->save();
+            }
+        }
+            
+    }
+    function updateDeliveryDropoff($order_id){
+        if ($delivery = Delivery::where("sales_id", $order_id)->first()) {
+            $delivery->status = 'Delivered';
+            $delivery->delivered_at = now();
+            $delivery->save();
+        }
+
+    }
+    function updateSaleDeliveryStatus($sale_id,$status,$message=""){
+        SaleDeliveryStatus::create([
+            'sale_id'=>$sale_id,
+            'status'=>$status,
+            'message'=>$message
+        ]);
     }
 }

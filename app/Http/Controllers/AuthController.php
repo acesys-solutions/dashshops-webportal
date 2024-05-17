@@ -744,9 +744,7 @@ class AuthController extends Controller
     {
         $user = $request->user();
         $token = $request->bearerToken();
-        Log::info("Bearer token: $token");
-        Log::info("user_id :" . $user->id);
-        Log::info("Bearer token (Hash): " . Hash::make($token));
+        
         $id = 0;
         if (LoginToken::where(["user_id" => $user->id])->exists()) {
             foreach (LoginToken::where(["user_id" => $user->id])->get() as $stuff) {

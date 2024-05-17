@@ -133,6 +133,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the coupon redeemed record associated with the user
+     */
+    public function retailer(): HasOne
+    {
+        return $this->hasOne(Retailer::class);
+    }
+
+    /**
      * Get the favorites for the user
      */
     public function favorites(): HasMany

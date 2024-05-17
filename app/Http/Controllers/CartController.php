@@ -21,7 +21,7 @@ class CartController extends Controller
     function delete(Request $request, $id)
     {
         $user = $request->user();
-        if (Cart::where(["product_variation_id"=> $id, "user_id"=>$user->id])->exists()) {
+        if (Cart::where(["product_variation_id" => $id, "user_id" => $user->id])->exists()) {
             $cart = Cart::where(["product_variation_id" => $id, "user_id" => $user->id])->first();
             $cart->delete();
             return response()->json(
@@ -41,20 +41,33 @@ class CartController extends Controller
             );
         }
     }
+    function deleteUserCart(Request $request)
+    {
+        $user = $request->user();
+        Cart::whereIn("user_id", [$user->id])->delete();
 
-    function syncFromApp(Request $request){
+        return response()->json(
+            [
+                'status' => true,
+                'message' => "User Cart Removed"
+            ],
+            200
+        );
+    }
+
+    function syncFromApp(Request $request)
+    {
         $user = $request->user();
         $products = json_decode($request->products_variant_ids, true);
         foreach ($products as $product) {
             if (Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->exists()) {
                 $cart = Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->first();
-                if((int)$product["quantity"]  != 0){
+                if ((int)$product["quantity"]  != 0) {
                     $cart->quantity =  (int)$product["quantity"];
                     $cart->save();
                 }
-                
             } else {
-                
+
                 Cart::create([
                     "user_id" => $user->id,
                     "product_variation_id" => $product["product_variation_id"],
@@ -71,14 +84,15 @@ class CartController extends Controller
         );
     }
 
-    function getProductDetails(Request $request){
+    function getProductDetails(Request $request)
+    {
         $products_variant_ids = json_decode($request->products_variant_ids, true);
         //$products_variant_ids = json_decode("[1,2,4]", true);
         $products = $this->getProductDetail($products_variant_ids);
         return response()->json(
             [
                 'status' => true,
-                "data"=>$products
+                "data" => $products
             ],
             200
         );
@@ -118,15 +132,15 @@ class CartController extends Controller
             ->join('products', 'products.id', '=', 'product_variation.product_id')
             ->join('retailers', 'retailers.id', '=', 'products.store_id')
             ->join('categories', 'categories.id', '=', 'products.category_id')
-            ->select(DB::raw("cart.quantity, ".$this->getSelectDBRawCartDisplay()))
+            ->select(DB::raw("cart.quantity, " . $this->getSelectDBRawCartDisplay()))
             ->where('cart.user_id', '=', $user->id)
-            ->where('products.status','=',1)
-            ->where('product_variation.status','=',1);
-    
+            ->where('products.status', '=', 1)
+            ->where('product_variation.status', '=', 1);
+
 
         $products = $products->groupBy("cart.id")
-        ->orderBy("products.product_name")
-        ->get();
+            ->orderBy("products.product_name")
+            ->get();
 
         return response()->json([
             "data" => $products
