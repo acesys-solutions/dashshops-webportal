@@ -8,7 +8,11 @@ use App\Models\CouponClicks;
 use App\Models\CouponDownloads;
 use App\Models\Delivery;
 use App\Models\CouponRedeemed;
+use App\Models\DriversPayout;
+use App\Models\RetailersPayout;
+use App\Models\Sale;
 use App\Models\SaleDeliveryStatus;
+use App\Models\SaleOrder;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
 
@@ -109,7 +113,7 @@ class Controller extends BaseController
         $clockwiseAngleFromNorth = 90 - $anticlockwiseAngleFromEast;
         return $clockwiseAngleFromNorth;
         // helper function
-        
+
     }
     function convertToDegrees($radian)
     {
@@ -160,7 +164,8 @@ class Controller extends BaseController
         list($encrypted_data, $iv) = explode('::', base64_decode($q), 2);
         return openssl_decrypt($encrypted_data, 'aes-256-cbc', $cryptKey, 0, $iv);
     }
-    function updateDeliveryPickup($order_id){
+    function updateDeliveryPickup($order_id)
+    {
         if ($delivery = Delivery::where("sales_id", $order_id)->first()) {
             // check if delivery has been picked up
             if (!$delivery->picked_at) {
@@ -169,21 +174,39 @@ class Controller extends BaseController
                 $delivery->save();
             }
         }
-            
     }
-    function updateDeliveryDropoff($order_id){
+    function updateDeliveryDropoff($order_id)
+    {
         if ($delivery = Delivery::where("sales_id", $order_id)->first()) {
             $delivery->status = 'Delivered';
             $delivery->delivered_at = now();
             $delivery->save();
+            if ($sales = Sale::where('order_id', "$order_id")->where('status', 'delivered')->get()) {
+                foreach ($sales as $sale) {
+                    RetailersPayout::create([
+                        'sale_id' => $sale->id,
+                        'retailer_id' => $sale->retailer_id,
+                        'amount' => $sale->quantity * $sale->unit_cost,
+                        'status' => "Pending"
+                    ]);
+                }
+            }
+            if ($sale_order = SaleOrder::find($order_id)) {
+                DriversPayout::create([
+                    'sale_id' => $order_id,
+                    'driver_id' => $sale_order->driver_id,
+                    'amount' => $sale_order->delivery_fee,
+                    'status' => "Pending",
+                ]);
+            }
         }
-
     }
-    function updateSaleDeliveryStatus($sale_id,$status,$message=""){
+    function updateSaleDeliveryStatus($sale_id, $status, $message = "")
+    {
         SaleDeliveryStatus::create([
-            'sale_id'=>$sale_id,
-            'status'=>$status,
-            'message'=>$message
+            'sale_id' => $sale_id,
+            'status' => $status,
+            'message' => $message
         ]);
     }
 }
