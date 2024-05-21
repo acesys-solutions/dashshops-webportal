@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
+use App\Models\Driver;
 use App\Models\DriverSetting;
 use App\Models\LoginToken;
 use App\Models\Notification;
@@ -110,9 +111,33 @@ class NotificationsController extends Controller
             "data" => $notifications
         ]);
     }
+    function getDriverNotifications($user_id)
+    {
+        if ($driver = Driver::where("user_id", $user_id)->first()) {
+            $notifications = DriverNotification::where(['driver_id' => $driver->id, 'trash' => false])->orderBy("created_at", "desc")->get();
+            return response()->json([
+                "message" => "Notifications Fetched Successfully",
+                "data" => $notifications
+            ]);
+        }
+        return response()->json([
+            "status" => false,
+            "message" => "Notifications not found"
+        ], 404);
+    }
     function markAsRead($id)
     {
         $notification = Notification::findorfail($id);
+        $notification->has_read = true;
+        $notification->save();
+        return response()->json([
+            "message" => "Notification Marked as Read Successfully",
+            "data" => $notification
+        ]);
+    }
+    function markAsReadDriver($id)
+    {
+        $notification = DriverNotification::findorfail($id);
         $notification->has_read = true;
         $notification->save();
         return response()->json([
@@ -132,6 +157,24 @@ class NotificationsController extends Controller
             "data" => $notifications
         ]);
     }
+    function markAllAsReadDriver($user_id)
+    {
+        if ($driver = Driver::where("user_id", $user_id)->first()) {
+            $notifications = DriverNotification::where('driver_id', $driver->id)->get();
+            foreach ($notifications as $notification) {
+                $notification->has_read = true;
+                $notification->save();
+            }
+            return response()->json([
+                "message" => "All Notifications Marked as Read Successfully",
+                "data" => $notifications
+            ]);
+        }
+        return response()->json([
+            "status" => false,
+            "message" => "Notifications not found",
+        ], 404);
+    }
     function getUnreadCount($user_id)
     {
         $notifications = Notification::where('user_id', $user_id)->where(['has_read' => false, 'trash' => false])->get();
@@ -140,9 +183,33 @@ class NotificationsController extends Controller
             "data" => count($notifications)
         ]);
     }
+    function getUnreadCountDriver($user_id)
+    {
+        if ($driver = Driver::where("user_id", $user_id)->first()) {
+            $notifications = DriverNotification::where('driver_id', $driver->id)->where(['has_read' => false, 'trash' => false])->get();
+            return response()->json([
+                "message" => "Unread Notifications Fetched Successfully",
+                "data" => count($notifications)
+            ]);
+        }
+        return response()->json([
+            "status"=>false,
+            "message" => "Notifications not found",
+        ],404);
+    }
     function trashNotification($id)
     {
         $notification = Notification::findorfail($id);
+        $notification->trash = true;
+        $notification->save();
+        return response()->json([
+            "message" => "Notification Deleted Successfully",
+            "data" => $notification
+        ]);
+    }
+    function trashDriverNotification($id)
+    {
+        $notification = DriverNotification::findorfail($id);
         $notification->trash = true;
         $notification->save();
         return response()->json([

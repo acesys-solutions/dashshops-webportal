@@ -21,17 +21,18 @@ use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
-    function productHasSales($id){
+    function productHasSales($id)
+    {
         return false;
     }
-    
+
     function delete(Request $request, $id)
     {
         $user = $request->user();
 
         if (Product::where(['id' => $id, 'store_id' => $user->retailer_id])->exists()) {
-            if($this->productHasSales($id)){
-             return response()->json([
+            if ($this->productHasSales($id)) {
+                return response()->json([
                     'status' => false,
                     'message' => "Product is already associated wih sales, either disable it or set all available quantities to zero"
                 ], 404);
@@ -102,6 +103,9 @@ class ProductController extends Controller
                 if (Product::where(["id" => $request->id, "store_id" => $user->retailer_id])->exists()) {
                     $product = Product::where(["id" => $request->id, "store_id" => $user->retailer_id])->first();
                     //$product->status = $request->status;
+                    if($product->status == 0){
+                        $product->status = -1;
+                    }
                     if ($request->has("image")) {
                         if (file_exists(public_path("images/" . $product->image))) {
                             unlink(public_path("images/" . $product->image));
@@ -243,7 +247,8 @@ class ProductController extends Controller
         ], 200);
     }
 
-    public function getrelevantproducts($count,$category="0",$search=""){
+    public function getrelevantproducts($count, $category = "0", $search = "")
+    {
         $products = DB::table('product_variation')
             ->join('products', 'products.id', '=', 'product_variation.product_id')
             ->join('retailers', 'retailers.id', '=', 'products.store_id')
@@ -277,22 +282,21 @@ class ProductController extends Controller
         $products = $products->where('products.status', 1);
         $products = $products->where('product_variation.status', 1);
         $products = $products->where('retailers.approval_status', 'Approved')
-        ->groupBy("products.id");
+            ->groupBy("products.id");
 
         $products = $products->get()->take($count);
 
         return response()->json([
             "data" => $products
         ], 200);
-        
     }
-    public function getrelevantproducts2($count,$category="0",$city="-",$state="-",$search="")
+    public function getrelevantproducts2($count, $category = "0", $city = "-", $state = "-", $search = "")
     {
         $products = DB::table('product_variation')
-        ->join('products', 'products.id', '=', 'product_variation.product_id')
-        ->join('retailers', 'retailers.id', '=', 'products.store_id')
-        ->join('categories', 'categories.id', '=', 'products.category_id')
-        ->select($this->getSelectDBRawProducts());
+            ->join('products', 'products.id', '=', 'product_variation.product_id')
+            ->join('retailers', 'retailers.id', '=', 'products.store_id')
+            ->join('categories', 'categories.id', '=', 'products.category_id')
+            ->select($this->getSelectDBRawProducts());
         if ($category != 0) {
             $products = $products->where('products.category_id', '=', $category);
         }
@@ -321,7 +325,7 @@ class ProductController extends Controller
         $products = $products->where('products.status', 1);
         $products = $products->where('product_variation.status', 1);
         $products = $products->where('retailers.approval_status', 'Approved')
-        ->groupBy("products.id");
+            ->groupBy("products.id");
 
         $products = $products->get()->take($count);
 
@@ -337,7 +341,7 @@ class ProductController extends Controller
         $offertype = $request->has('offer_type') ? $request->get('offer_type') : "all";
         $search = $request->has('search') ? $request->get('search') : "";
         $retailers = Retailer::where('approval_status', "Approved");
-      
+
         if (Auth::user()->admin == 2) {
             $retailers = $retailers->where('created_by', '=', Auth::user()->id);
         }
@@ -350,23 +354,87 @@ class ProductController extends Controller
         return view('pages.products', compact(['retailers', 'category', 'type', 'offertype', 'search', 'categories', 'total_downloads', 'total_clicks', 'total_redemptions']));
     }
 
-    function search(Request $request){
+    function viewproduct($id)
+    {
+        if (!$product = Product::with('variants')->with('category')->with('retailer')->where('id', $id)->first()) {
+            abort(404);
+        }
+        $categories = Category::all();
+        $total_downloads = $this->getTotalDownloads(); // CouponDownloads::sum('Downloads');
+        $total_clicks = $this->getTotalClicks(); //CouponClicks::sum('clicks');
+        $total_redemptions = $this->getTotalRedemptions(); // CouponRedeemed::count();
+        $view = view('pages.product-view', compact(['product', 'categories', 'total_downloads', 'total_clicks', 'total_redemptions']));
+        return $view;
+    }
+
+    function approveProduct(Request $request)
+    {
+        if ($product = Product::with('retailer')->with('retailer.user')->find($request->id)) {
+            $product->status = 1;
+            $product->save();
+
+            ProductVariant::whereIn('product_id', [$request->id])->update(['status' => 1]);
+
+            $notif = new \App\Http\Controllers\NotificationsController();
+            $notif->setNotification(new \App\Models\Notification([
+                "user_id" => $product->retailer->user->id,
+                "title" => "Dash shop product has been approved",
+                "content" => "Your product \"" . $product->product_name . "\", has been approved by Dash shops. Buyers can now see this product listing on your store. Thanks for using Dash Shops",
+                "type" => "Product",
+                "source_id" => $product->id,
+                "has_read" => false,
+                "trash" => false
+            ]));
+            return response()->json([
+                "status" => true,
+                "message" => "Product has been approved"
+            ], 200);
+        }
+    }
+    function denyProduct(Request $request)
+    {
+        if ($product = Product::with('retailer')->with('retailer.user')->find($request->id)) {
+            $product->status = 0;
+            $product->save();
+
+            ProductVariant::whereIn('product_id', [$request->id])->update(['status' => 0]);
+
+            $notif = new \App\Http\Controllers\NotificationsController();
+            $notif->setNotification(new \App\Models\Notification([
+                "user_id" => $product->retailer->user->id,
+                "title" => "Dash shop product has been suspended",
+                "content" => "Your product \"" . $product->product_name . "\", has been suspended by Dash shops for the following reason: ".$request->reason.". Kindly review and update the product listing.",
+                "type" => "Product",
+                "source_id" => $product->id,
+                "has_read" => false,
+                "trash" => false
+            ]));
+            return response()->json([
+                "status" => true,
+                "message" => "Product has been suspended"
+            ], 200);
+        }
+    }
+
+
+    function search(Request $request)
+    {
         $category = $request->get('category_id');
-        $retailer_id = $request->has("retailer_id")?$request->get('retailer_id'):"0";
+        $retailer_id = $request->has("retailer_id") ? $request->get('retailer_id') : "0";
         $search = $request->get('search');
         $status = $request->get('status');
         $products = DB::table('product_variation')
-        ->join('products', 'products.id', '=', 'product_variation.product_id')
-        ->join('retailers', 'retailers.id', '=', 'products.store_id')
-        ->join('categories', 'categories.id', '=', 'products.category_id')
-        ->select($this->getSelectDBRawProducts());
+            ->join('products', 'products.id', '=', 'product_variation.product_id')
+            ->join('retailers', 'retailers.id', '=', 'products.store_id')
+            ->join('categories', 'categories.id', '=', 'products.category_id')
+            ->select($this->getSelectDBRawProducts());
         if ((int)$category != 0) {
             $products = $products->where('products.category_id', '=', $category);
         }
         if ((int)$retailer_id != 0) {
-            $products = $products->where('products.store_id', '=',(int)$retailer_id);
+            $products = $products->where('products.store_id', '=', (int)$retailer_id);
         }
-    
+
 
         if ($search != "") {
             $products = $products->whereNested(function ($q) use ($search) {
@@ -379,14 +447,14 @@ class ProductController extends Controller
                     ->orWhere('products.overview', 'LIKE', '%' . $search . '%');
             });
         }
-        if($status != "all"){
+        if ($status != "all") {
             $products = $products->where('products.status', (int)$status);
             $products = $products->where('product_variation.status', (int)$status);
         }
         $products = $products->groupBy("products.id");
         $products = $products->get();
         //echo json_encode($products);die();
-        $view = view('pages.products-table',["products"=>$products]);
+        $view = view('pages.products-table', ["products" => $products]);
         return $view;
     }
 }

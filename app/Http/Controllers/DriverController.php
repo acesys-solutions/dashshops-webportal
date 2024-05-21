@@ -9,11 +9,14 @@ use App\Http\Resources\PaginationResource;
 use App\Http\Resources\RejectedDeliveryResource;
 use App\Http\Resources\TrackingResource;
 use App\Http\Resources\UserResource;
+use App\Models\Category;
 use App\Models\Delivery;
 use App\Models\Driver;
 use App\Models\DriverToken;
 use App\Models\RejectedDelivery;
+use App\Models\Retailer;
 use App\Models\SaleOrder;
+use App\Models\State;
 use App\Models\Tracking;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
@@ -239,12 +242,34 @@ class DriverController extends Controller
             ];
 
             $driver->save();
+            if ($tracking = Tracking::join('deliveries', 'deliveries.id', "=", "tracking.delivery_id")
+                ->join('sale_orders', 'sale_orders.id', '=', 'deliveries.sales_id')
+                ->select('tracking.*')->where("sale_orders.status", '<>', 'cancelled')
+                ->where("sale_orders.status", '<>', 'delivered')
+                ->where("sale_orders.driver_id", $driver->id)->first()
+            ){
+                $tracking->latitude = $request->latitude;
+                $tracking->longitude = $request->longitude;
+                $tracking->bearing = $request->bearing;
+                $tracking->city = $request->city;
+                $tracking->zip = $request->zip;
+                $tracking->state = $request->state;
+                $tracking->location_log = array_merge($tracking->location_log, [
+                    [
+                        'latitude' => $request->latitude,
+                        'longitude' => $request->longitude,
+                        'bearing'=>$request->bearing,
+                        'timestamp' => now(),
+                    ],
+                ]);
+                $tracking->save();
+            }
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Current location updated successfully',
-                'data' => new DriverResource($driver),
-            ], 201);
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Current location updated successfully',
+                    'data' => new DriverResource($driver),
+                ], 201);
         }
 
         return response()->json([
@@ -622,6 +647,7 @@ class DriverController extends Controller
                         'delivery_id' => $delivery->id,
                         'latitude' => $request->latitude,
                         'longitude' => $request->longitude,
+                        'bearing' => $request->bearing,
                         'zip' => $request->zip,
                         'state' => $request->state,
                         'city' => $request->city,
@@ -629,6 +655,7 @@ class DriverController extends Controller
                             [
                                 'latitude' => $request->latitude,
                                 'longitude' => $request->longitude,
+                                'bearing' => $request->bearing,
                                 'timestamp' => now(),
                             ],
                         ],
@@ -953,5 +980,74 @@ class DriverController extends Controller
                     'message' => 'Could not find driver'
                 ], 404);
         }
+    }
+    function approveDriver(Request $request){
+        if($driver = Driver::find($request->id)){
+            $driver->approval_status = "Approved";
+            $driver->save();
+            $notif = new \App\Http\Controllers\NotificationsController();
+            $notif->setDriverNotification(new \App\Models\DriverNotification([
+                "driver_id" => $driver->id,
+                "title" => "Dash shop Driver Profile has been approved",
+                "content" => "Your driver's profile has been approved by Dash shops. Thanks for using Dash Shops",
+                "type" => "Driver",
+                "source_id" => $driver->id,
+                "has_read" => false,
+                "trash" => false
+            ]));
+            return response()->json([
+                "status" => true,
+                "message" => "Driver profile has been approved"
+            ], 200);
+        }
+    }
+    function denyDriver(Request $request)
+    {
+        if ($driver = Driver::find($request->id)) {
+            $driver->approval_status = "Denied";
+            $driver->save();
+            $notif = new \App\Http\Controllers\NotificationsController();
+            $notif->setDriverNotification(new \App\Models\DriverNotification([
+                "driver_id" => $driver->id,
+                "title" => "Dash shop driver profile approval was denied",
+                "content" => "Your driver's profile has been rejected by Dash shops for the following reason: " . $request->reason . ". Kindly review and update the product listing.",
+                "type" => "Driver",
+                "source_id" => $driver->id,
+                "has_read" => false,
+                "trash" => false
+            ]));
+            return response()->json([
+                "status" => true,
+                "message" => "Driver profile has been rejected"
+            ], 200);
+        }
+    }
+    function searchDrivers(Request $request){
+        $state = $request->has('state') ? $request->get('state') : "0";
+        $page = $request->has('page') ? $request->get('page') : 1;
+
+        $status = $request->has('status') ? $request->get('status') : "all";
+        $search = $request->has('search') ? $request->get('search') : "";
+
+        $drivers = Driver::with('user')->join('users','users.id','=','drivers.user_id')->select('drivers.*');
+        if($state!="0" && $state != "all"){
+            $drivers = $drivers->where('users.state',$state);
+        }
+        if ($status != "all") {
+            $drivers = $drivers->where('drivers.status', $status);
+        }
+        $drivers = $drivers->get();
+        //var_dump()
+
+        return view('pages.drivers-table', compact(['drivers']));
+
+    }
+    function showDrivers(Request $request){
+        
+        $states = State::all();
+        $total_downloads = $this->getTotalDownloads(); // CouponDownloads::sum('Downloads');
+        $total_clicks = $this->getTotalClicks(); //CouponClicks::sum('clicks');
+        $total_redemptions = $this->getTotalRedemptions(); // CouponRedeemed::count();
+        return view('pages.drivers', compact(['states', 'total_downloads', 'total_clicks', 'total_redemptions']));
     }
 }

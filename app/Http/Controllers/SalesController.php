@@ -9,6 +9,7 @@ use App\Http\Resources\SaleOrderResource;
 use App\Models\Cart;
 use App\Models\Driver;
 use App\Models\ProductVariant;
+use App\Models\Tracking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -143,10 +144,10 @@ class SalesController extends Controller
     {
         $user = $request->user();
 
-        if ($sale_order = SaleOrder::with('sales')->with('sales.retailer')->where("id", $id)->first()) {
+        if ($sale_order = SaleOrder::with('driver')->with('sales')->with('sales.retailer')->with('sales.retailer.user')->where("id", $id)->first()) {
             return response()->json([
                 'status' => true,
-                'data' => new SaleOrderResource($sale_order),
+                'data' => $sale_order,
             ]);
         }
         return response()->json([
@@ -168,6 +169,31 @@ class SalesController extends Controller
             'status' => true,
             'data' => $sale_orders,
         ]);
+    }
+    function getDriverTracking(Request $request)
+    {
+        $user = $request->user();
+        $request->validate([
+            'order_id' => 'required|numeric',
+        ]);
+        $order_id = $request->order_id;
+
+        if ($tracking = Tracking::join('deliveries', 'deliveries.id', '=', 'tracking.delivery_id')
+            ->join('sale_orders', 'sale_orders.id', '=', 'deliveries.sales_id')
+            ->select('tracking.*')->where('deliveries.sales_id', $order_id)
+            ->where('sale_orders.user_id', $user->id)
+            ->first()
+        ) {
+            return response()->json([
+                'status' => true,
+                'data' => $tracking,
+            ]);
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => "Delivery Tracking not available",
+            ]);
+        }
     }
     function getUserDeliveredSaleOrder(Request $request)
     {
@@ -212,8 +238,8 @@ class SalesController extends Controller
     {
         $user = $request->user();
 
-        $sale_orders = SaleOrder::with('sales')
-            ->with('sales.retailer')
+        $sale_orders = SaleOrder::with('sales')->with('driver')->with('driver.user')
+            ->with('sales.retailer')->with('sales.retailer.user')
             ->where("sale_orders.user_id", $user->id)
             ->orderBy('sale_orders.created_at', 'desc')
             ->get();
@@ -236,11 +262,11 @@ class SalesController extends Controller
                     'status' => true,
                     'data' => $sale_order,
                 ]);
-            }else{
+            } else {
                 return response()->json([
                     'status' => false,
                     'message' => "No pending sale order",
-                ],204);
+                ], 204);
             }
         } else {
             return response()->json([
@@ -249,6 +275,7 @@ class SalesController extends Controller
             ], 404);
         }
     }
+
     function validatePickupCode(Request $request)
     {
         $user = $request->user();
@@ -330,7 +357,7 @@ class SalesController extends Controller
                     return response()->json([
                         'status' => true,
                         "message" => "Pickup Confirmed",
-                        "data"=>$sale
+                        "data" => $sale
 
                     ]);
                 } else {
@@ -474,7 +501,7 @@ class SalesController extends Controller
                 return response()->json([
                     'status' => true,
                     "message" => "Pickup/Delivery Confirmed",
-                    "data"=>$sale
+                    "data" => $sale
 
                 ]);
             } else {
@@ -565,7 +592,7 @@ class SalesController extends Controller
                     return response()->json([
                         'status' => true,
                         'message' => "Delivery Confirm",
-                        "data"=> $sale
+                        "data" => $sale
                     ], 200);
                 } else {
                     return response()->json([

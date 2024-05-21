@@ -113,10 +113,10 @@
                                                     @endif
                                                 </div>
                                                 <div class="form-group col-6 mb-4">
-                                                    <label>Retailer's Username</label>
-                                                    <input type="text" class="form-control" placeholder="Retailer's Username" name="username" value="{{ old('username') }}" required>
-                                                    @if ($errors->has('username'))
-                                                    <small class="text-danger">{{ $errors->first('username')}}</small>
+                                                    <label>Phone Number (Country Code First +1)</label>
+                                                    <input type="tel" class="form-control" placeholder="eg +1755645362" name="phone_number" value="{{ old('phone_number') }}" required>
+                                                    @if ($errors->has('phone_number'))
+                                                    <small class="text-danger">{{ $errors->first('phone_number')}}</small>
                                                     @endif
                                                 </div>
                                                 <div class="form-group col-6 mb-4">
@@ -224,20 +224,14 @@
                                                     <small class="text-danger">{{ $errors->first('type_of_business')}}</small>
                                                     @endif
                                                 </div>
-                                                <div class="form-group col-7 mb-4">
-                                                    <label>Website</label>
+                                                <div class="form-group col-12 mb-4">
+                                                    <label>Website (https://)</label>
                                                     <input type="url" class="form-control" placeholder="Website" name="web_url" value="{{ old('web_url') }}" required>
                                                     @if ($errors->has('web_url'))
                                                     <small class="text-danger">{{ $errors->first('web_url')}}</small>
                                                     @endif
                                                 </div>
-                                                <div class="form-group col-5 mb-4">
-                                                    <label>Phone Number</label>
-                                                    <input type="tel" class="form-control" placeholder="Phone Number" name="phone_number" value="{{ old('phone_number') }}" required>
-                                                    @if ($errors->has('phone_number'))
-                                                    <small class="text-danger">{{ $errors->first('phone_number')}}</small>
-                                                    @endif
-                                                </div>
+
                                                 <div class="form-group col-8 mb-4">
                                                     <label>Retailer's Address</label>
                                                     <input type="text" class="form-control" placeholder="Retailer's Address" name="business_address" value="{{ old('business_address') }}" required>
@@ -247,42 +241,28 @@
                                                 </div>
                                                 <div class="form-group col-4 mb-4">
                                                     <label>Zip Code</label>
-                                                    <input type="number" class="form-control" placeholder="Zip Code" name="zip_code" value="{{ old('zip_code') }}" required>
+                                                    <input type="number" class="form-control" placeholder="Zip Code" name="zip_code" value="{{ old('zip_code') }}" required />
                                                     @if ($errors->has('zip_code'))
                                                     <small class="text-danger">{{ $errors->first('zip_code')}}</small>
                                                     @endif
                                                 </div>
-                                                <div class="form-group col-4 mb-4">
-                                                    <label>Island</label>
-                                                    <select name="island" class="form-control select2" style="border-color: #FFFFFF;  box-shadow: 5px 4px #efefef;" id="island" onchange="islandChanged()">
-                                                        <option value="">Select Island</option>
-                                                        <option value="oahu">Oahu</option>
-                                                        <option value="maui">Maui</option>
-                                                        <option value="kauai">Kauai</option>
-                                                        <option value="hawaii">Hawaii</option>
-                                                    </select>
-                                                    @if ($errors->has('island'))
-                                                    <small class="text-danger">{{ $errors->first('island')}}</small>
-                                                    @endif
-                                                </div>
-                                                <div class="form-group col-4 mb-4">
+                                                <div class="form-group col-6 mb-4">
                                                     <label>City</label>
                                                     <div id="divCity">
-                                                        <select name="city" class="form-control select2" style="border-color: #FFFFFF;  box-shadow: 5px 4px #efefef;" id="city">
-                                                            <option value="">Select City</option>
+                                                        <input type="text" class="form-control" placeholder="Enter City" name="city" value="{{ old('city') }}" required />
 
-                                                        </select>
                                                     </div>
                                                     @if ($errors->has('city'))
                                                     <small class="text-danger">{{ $errors->first('city')}}</small>
                                                     @endif
                                                 </div>
-                                                <div class="form-group col-4 mb-4">
+                                                <div class="form-group col-6 mb-4">
                                                     <label>State</label>
 
                                                     <select name="state" class="form-control select2" style="border-color: #FFFFFF;  box-shadow: 5px 4px #efefef;" id="state">
-                                                        <option value="Hawaii" selected>Hawaii</option>
-
+                                                        @foreach($states as $state)
+                                                        <option value="{{$state->name}}" selected>{{$state->name}}</option>
+                                                        @endforeach
                                                     </select>
 
                                                     @if ($errors->has('state'))
@@ -327,24 +307,24 @@
         //new DataTable('#table_created_retailers');
         $('.select2').select2();
         $("#banner_image").change(function() {
-        if ($("#banner_image").val() === "") {
+            if ($("#banner_image").val() === "") {
 
-        } else {
-            if (this.files && this.files[0]) {
-                var reader = new FileReader();
-                reader.addEventListener("load", function () {
-                    $("#imgBanner").html(
-                        '<img src="' + reader.result + '" class="img-fluid" alt="">'
-                    );
-                    $("#imgBanner").css("display", "block");
-        
-                }, false);
-                reader.readAsDataURL(this.files[0]);
-        
-        
+            } else {
+                if (this.files && this.files[0]) {
+                    var reader = new FileReader();
+                    reader.addEventListener("load", function() {
+                        $("#imgBanner").html(
+                            '<img src="' + reader.result + '" class="img-fluid" alt="">'
+                        );
+                        $("#imgBanner").css("display", "block");
+
+                    }, false);
+                    reader.readAsDataURL(this.files[0]);
+
+
+                }
             }
-        }
-    });
+        });
 
     })
 </script>

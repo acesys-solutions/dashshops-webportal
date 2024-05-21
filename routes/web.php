@@ -9,6 +9,7 @@ use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RetailerController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\UserController;
 use App\Models\Category;
 use App\Models\State;
@@ -56,6 +57,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/coupons/{id}', [CouponController::class, 'destroy'])->name('admin.coupons.delete');
     Route::get('/products', [ProductController::class, 'showAll'])->name('products');
     Route::get('/products/search', [ProductController::class, 'search'])->name('product-search');
+    Route::get('/products/view/{id}', [ProductController::class, 'viewproduct'])->name('product-view');
 
 
 
@@ -78,6 +80,9 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/retailers/add', [RetailerController::class, 'showAddRetailer'])->name('add-retailers');
         Route::post('/retailers/', [RetailerController::class, 'store'])->name('add-retailer');
+        //product approval
+        Route::post('/product/approve', [ProductController::class, 'approveProduct']);
+        Route::post('/product/deny', [ProductController::class, 'denyProduct']);
     });
     Route::middleware(['super_admin'])->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
@@ -95,11 +100,18 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/admin-portal', [UserController::class, 'showAdminPortal'])->name('admin-portal');
 
 
+
         //Ads
         Route::get('/ads', [AdsController::class, 'showAll'])->name('ads');
         Route::get('/ads/get/{id}', [AdsController::class, 'getById']);
         Route::post('/ads/update', [AdsController::class, 'update'])->name('update-ads');
         Route::delete('/ads/{id}', [AdsController::class, 'destroy'])->name('delete-ad');
+
+        //Drivers
+        Route::get('/drivers', [DriverController::class, 'showDrivers'])->name('drivers');
+        Route::get('/drivers/search', [DriverController::class, 'searchDrivers']);
+        Route::post('/driver/approve', [DriverController::class, 'approveDriver']);
+        Route::post('/driver/deny', [DriverController::class, 'denyDriver']);
 
         //Categories
         Route::get('/categories', [CategoryController::class, 'showAll'])->name('categories');

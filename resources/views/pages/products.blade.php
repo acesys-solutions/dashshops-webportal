@@ -82,7 +82,7 @@
                     <div class="card-body">
 
                         <div class="row">
-                            
+
                             <div class="col-3">
                                 <div class="form-group">
                                     <label for="exampleFormControlSelect1">Retailers</label>
@@ -130,6 +130,7 @@
                             </div>
 
                             <div class="col-2">
+                                {{ csrf_field() }}
                                 <button type="button" onclick="hSearch()" class=" btn btn-primary mt-4">Search</button>
                             </div>
                         </div>
@@ -160,7 +161,6 @@
             </div>
         </div>
     </div>
-    </div>
 </main>
 
 @endsection
@@ -177,4 +177,6 @@
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
 <script src="{{asset('js/choices.min.js?'.time())}}"></script>
 <script src="{{asset('js/products-view.js?'.time())}}"></script>
+<script src="{{asset('js/product-approval.js?'.time())}}"></script>
+
 @endsection

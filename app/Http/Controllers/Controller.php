@@ -8,6 +8,7 @@ use App\Models\CouponClicks;
 use App\Models\CouponDownloads;
 use App\Models\Delivery;
 use App\Models\CouponRedeemed;
+use App\Models\Driver;
 use App\Models\DriversPayout;
 use App\Models\RetailersPayout;
 use App\Models\Sale;
@@ -181,6 +182,10 @@ class Controller extends BaseController
             $delivery->status = 'Delivered';
             $delivery->delivered_at = now();
             $delivery->save();
+            if($driver = Driver::find($delivery->driver_id)){
+                $driver->available = true;
+                $driver->save();
+            }
             if ($sales = Sale::where('order_id', "$order_id")->where('status', 'delivered')->get()) {
                 foreach ($sales as $sale) {
                     RetailersPayout::create([

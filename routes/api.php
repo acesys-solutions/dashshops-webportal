@@ -65,11 +65,20 @@ Route::get('states/{id}', [StateController::class, 'getById']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/verifyToken', [AuthController::class, 'updateDeviceToken']);
 
-    Route::get('/getnotifications/{user_id}', [NotificationsController::class, 'getNotifications']);
+    Route::get('/getnotifications/{user_id}', [
+        NotificationsController::class,
+        'getNotifications'
+    ]);
+    Route::get('/getdrivernotifications/{user_id}', [NotificationsController::class, 'getDriverNotifications']);
+    Route::get('/markasreaddriver/{id}',[NotificationsController::class, 'markAsReadDriver']);
     Route::get('/markasread/{id}', [NotificationsController::class, 'markAsRead']);
     Route::get('/markallasread/{user_id}', [NotificationsController::class, 'markAllAsRead']);
     Route::get('/trashnotification/{id}', [NotificationsController::class, 'trashNotification']);
+    Route::get('/trashdrivernotification/{id}', [NotificationsController::class, 'trashDriverNotification']);
+    
     Route::get('/getunreadnotificationcount/{user_id}', [NotificationsController::class, 'getUnreadCount']);
+    Route::get('/getunreaddrivernotificationcount/{user_id}', [NotificationsController::class, 'getUnreadCountDriver']);
+    
 
     //Category
 
@@ -247,13 +256,14 @@ Route::group(
                 Route::get('/getdrivercurrentschedule', [SalesController::class, 'getDriverCurrentSchedule']);
                 Route::get('/getretailersalesorders', [SalesController::class, 'getRetailerSaleOrders']);
                 Route::get('/getdeliveredsalesorders', [SalesController::class, 'getUserDeliveredSaleOrder']);
+                Route::post('/get-driver-tracking', [SalesController::class, 'getDriverTracking']);
                 Route::post('/generatepickupcode', [SalesController::class, 'generatePickupQRCode']);
                 Route::post('/validatepickupcode', [SalesController::class, 'validatePickupCode']);
                 Route::post('/generatedriverdeliverycode', [SalesController::class, 'generateDriverDeliveryQRCode']);
                 Route::post('/validatedriverdeliverycode', [SalesController::class, 'validateDriverDeliveryCode']);
                 Route::post('/generateretailercustomercode', [SalesController::class, 'generateRetailerCustomerQRCode']);
                 Route::post('/validateRetailercustomerpickupcode', [SalesController::class, 'validateRetailerCustomerPickupCode']);
-            }   
+            }
         );
     }
 );
@@ -279,7 +289,7 @@ Route::group(['prefix' => '/driver'], function () {
         Route::post('/bank-details', [DriverController::class, 'updateBankDetails']);
         Route::post('/set-hourly-rate', [DriverController::class, 'setHourlyRate']);
         Route::post('/set-availability', [DriverController::class, 'setAvailability']);
-        Route::post('/verifyToken' , [DriverController::class, 'updateDeviceToken']);
+        Route::post('/verifyToken', [DriverController::class, 'updateDeviceToken']);
         Route::post('/fetch-driver-detail', [DriverController::class, 'getDriverDetailsLocation']);
 
         // Delivery
