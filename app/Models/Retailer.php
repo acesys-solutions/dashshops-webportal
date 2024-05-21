@@ -89,6 +89,16 @@ class Retailer extends Authenticatable
     }
 
     /**
+     * Get the user that modified the retailer
+     *
+     * @return HasOne
+     */
+    public function user():HasOne
+    {
+        return $this->hasOne(User::class);
+    }
+
+    /**
      * Get the favorites for the retailer
      *
      * @return HasMany

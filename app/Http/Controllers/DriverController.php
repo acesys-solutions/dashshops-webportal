@@ -6,17 +6,24 @@ use App\Http\Resources\ClosestDriverResource;
 use App\Http\Resources\DeliveryResource;
 use App\Http\Resources\DriverResource;
 use App\Http\Resources\PaginationResource;
+use App\Http\Resources\RejectedDeliveryResource;
 use App\Http\Resources\TrackingResource;
 use App\Http\Resources\UserResource;
+use App\Models\Category;
 use App\Models\Delivery;
 use App\Models\Driver;
+use App\Models\DriverToken;
 use App\Models\RejectedDelivery;
+use App\Models\Retailer;
+use App\Models\SaleOrder;
+use App\Models\State;
 use App\Models\Tracking;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class DriverController extends Controller
@@ -53,6 +60,12 @@ class DriverController extends Controller
         ]);
 
         $token = $user->createToken('API TOKEN')->plainTextToken;
+        DriverToken::create([
+            'driver_id' => $driver->id,
+            'token' => Hash::make(
+                $this->strright($token)
+            )
+        ]);
 
         return response()->json([
             'status' => true,
@@ -63,6 +76,58 @@ class DriverController extends Controller
                 'driver' => new DriverResource($driver),
             ],
         ], 201);
+    }
+
+    /**
+     * Update Driver device token
+     */
+    public function updateDeviceToken(Request $request)
+    {
+        $user = $request->user();
+        $token = $request->bearerToken();
+
+        Log::info("Bearer: = " . $token);
+
+        if (Driver::where('user_id', $user->id)->exists()) {
+            $driver = Driver::where('user_id', $user->id)->first();
+            Log::info("Driver exsit");
+            $id = 0;
+            if (DriverToken::where(["driver_id" => $driver->id])->exists()) {
+                Log::info("device token exist for driver");
+                foreach (DriverToken::where(["driver_id" => $driver->id])->get() as $stuff) {
+                    if (Hash::check($token, $stuff->token)) {
+                        $id = $stuff->id;
+                        break;
+                    }
+                }
+                if ($id != 0) {
+                    $loginToken = DriverToken::find($id);
+                    $loginToken->device_token = $request->device_token;
+                    $loginToken->device_type = $request->device_type;
+                    $loginToken->save();
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Device Token Updated Successfully',
+                        'data' => $loginToken
+                    ], 200);
+                } else {
+                    Log::info("Could not find match");
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Token does not exist',
+                    ], 204);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Token does not exist',
+                ], 204);
+            }
+        }
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver T does not exist',
+        ], 404);
     }
 
     /**
@@ -79,7 +144,7 @@ class DriverController extends Controller
         if (Auth::attempt(['phone_number' => $request->phone_number, 'password' => $request->password])) {
             $token = Auth::user()->createToken('API TOKEN')->plainTextToken;
 
-            if(!Driver::where('user_id', Auth::id())->exists()){
+            if (!Driver::where('user_id', Auth::id())->exists()) {
                 $driver = Driver::create([
                     'user_id' => Auth::id(),
                     'acceptance_rating' => [
@@ -88,9 +153,13 @@ class DriverController extends Controller
                     ],
                     'hourly_delivery_rate' => 0,
                 ]);
-            }else{
+            } else {
                 $driver = Driver::where('user_id', Auth::id())->first();
             }
+            DriverToken::create([
+                'driver_id' => $driver->id,
+                'token' => Hash::make($this->strright($token))
+            ]);
 
             return response()->json([
                 'status' => true,
@@ -110,11 +179,29 @@ class DriverController extends Controller
     }
 
     /**
-     * Get driver's profile.
+     * Get driver's profile requested by the driver.
      */
     public function profile()
     {
         if ($driver = Driver::where('user_id', Auth::id())->first()) {
+            return response()->json([
+                'status' => true,
+                'data' => new DriverResource($driver),
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver not found'
+        ], 404);
+    }
+
+    /**
+     * Get driver's profile as request by another user.
+     */
+    public function driverProfile($id)
+    {
+        if ($driver = Driver::where('id', $id)->first()) {
             return response()->json([
                 'status' => true,
                 'data' => new DriverResource($driver),
@@ -142,24 +229,47 @@ class DriverController extends Controller
 
         if ($driver = Driver::where('user_id', Auth::id())->first()) {
             $bearing = $this->getCurrentDirection(
-                ["lat" => $driver->latitude, "lng" => $driver->longitude], 
-                ["lat" => $request->latitude, "lng" => $request->longitude]);
+                ["lat" => $driver->latitude, "lng" => $driver->longitude],
+                ["lat" => $request->latitude, "lng" => $request->longitude]
+            );
             $driver->current_location = [
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
-                'bearing'=>$bearing,
+                'bearing' => $bearing,
                 'city' => $request->city ?? $driver->current_location['city'] ?? null,
                 'state' => $request->state ?? $driver->current_location['state'] ?? null,
                 'zip' => $request->zip ?? $driver->current_location['zip'] ?? null,
             ];
 
             $driver->save();
+            if ($tracking = Tracking::join('deliveries', 'deliveries.id', "=", "tracking.delivery_id")
+                ->join('sale_orders', 'sale_orders.id', '=', 'deliveries.sales_id')
+                ->select('tracking.*')->where("sale_orders.status", '<>', 'cancelled')
+                ->where("sale_orders.status", '<>', 'delivered')
+                ->where("sale_orders.driver_id", $driver->id)->first()
+            ){
+                $tracking->latitude = $request->latitude;
+                $tracking->longitude = $request->longitude;
+                $tracking->bearing = $request->bearing;
+                $tracking->city = $request->city;
+                $tracking->zip = $request->zip;
+                $tracking->state = $request->state;
+                $tracking->location_log = array_merge($tracking->location_log, [
+                    [
+                        'latitude' => $request->latitude,
+                        'longitude' => $request->longitude,
+                        'bearing'=>$request->bearing,
+                        'timestamp' => now(),
+                    ],
+                ]);
+                $tracking->save();
+            }
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Current location updated successfully',
-                'data' => new DriverResource($driver),
-            ], 201);
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Current location updated successfully',
+                    'data' => new DriverResource($driver),
+                ], 201);
         }
 
         return response()->json([
@@ -358,6 +468,13 @@ class DriverController extends Controller
         ]);
 
         if ($driver = Driver::where('user_id', Auth::id())->first()) {
+            if ($sale_order = SaleOrder::where("driver_id", $driver->id)->where('status', "Pending")->first()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You cannot set availability status until you accept or reject pending delivery request',
+                    'data' => new DriverResource($driver),
+                ], 400);
+            }
             $driver->available = $request->available;
             $driver->save();
 
@@ -423,15 +540,57 @@ class DriverController extends Controller
     }
 
     /**
+     * Get driver detail. (ClosestDriverResource)
+     */
+    public function getDriverDetailsLocation(Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' =>
+            'required|numeric',
+            'driver_id' => 'required|numeric',
+        ]);
+
+        $longitude = $request->longitude;
+        $latitude = $request->latitude;
+
+        if ($driver = Driver::with('user')->where('id', $request->driver_id)
+            ->whereNotNull('current_location')
+            ->where('drivers.approval_status', 'Approved')->first()
+        ) {
+
+
+
+            // calculate distance between driver and user using Haversine formula
+            $theta = $longitude - $driver->current_location['longitude'];
+            $distance = sin(deg2rad($latitude)) * sin(deg2rad($driver->current_location['latitude'])) + cos(deg2rad($latitude)) * cos(deg2rad($driver->current_location['latitude'])) * cos(deg2rad($theta));
+            $distance = acos($distance);
+            $distance = rad2deg($distance);
+            $miles = $distance * 60 * 1.1515;
+            $driver->distance = $miles;
+
+            return response()->json([
+                'status' => true,
+                'data' => new ClosestDriverResource($driver),
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => false,
+                'data' => "Driver not longer available",
+            ], 44);
+        }
+    }
+
+    /**
      * Get closest available drivers.
      */
     public function closestAvailableDrivers(Request $request)
     {
-         $request->validate([
+        $request->validate([
             'city' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
-        ]); 
+        ]);
 
         //{city: Las Vegas, latitude: 36.111199, longitude: -115.1401373}
 
@@ -467,6 +626,66 @@ class DriverController extends Controller
         ], 200);
     }
 
+    public function startDelivery(Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'order_id' => 'required|numeric'
+        ]);
+        $user = $request->user();
+        $order_id = $request->order_id;
+
+        if ($driver = Driver::where("user_id", $user->id)->first()) {
+            if ($sale_order = SaleOrder::where("id", $order_id)->where("status", "=", "pending start")->first()) {
+                if ($delivery = Delivery::where("sales_id", $order_id)->first()) {
+
+                    $sale_order->status = "Pending Pickup";
+                    $sale_order->save();
+                    // start tracking
+                    $tracking = Tracking::create([
+                        'delivery_id' => $delivery->id,
+                        'latitude' => $request->latitude,
+                        'longitude' => $request->longitude,
+                        'bearing' => $request->bearing,
+                        'zip' => $request->zip,
+                        'state' => $request->state,
+                        'city' => $request->city,
+                        'location_log' => [
+                            [
+                                'latitude' => $request->latitude,
+                                'longitude' => $request->longitude,
+                                'bearing' => $request->bearing,
+                                'timestamp' => now(),
+                            ],
+                        ],
+                    ]);
+
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Delivery picked up successfully',
+                        'delivery' => new DeliveryResource($delivery),
+                        'tracking' => new TrackingResource($tracking),
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Delivery not found'
+                    ], 404);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Order is no longer available'
+                ], 400);
+            }
+        }
+        return response()->json([
+            'status' => false,
+            'message' => 'Driver not found'
+        ], 404);
+    }
+
     /**
      * Accept or decline delivery request
      */
@@ -477,18 +696,36 @@ class DriverController extends Controller
             'sales_id' => 'required|integer|unique:deliveries|exists:sales,id',
             'delivery_fee' => 'required|numeric',
         ]);
+        $notif = new \App\Http\Controllers\NotificationsController();
 
         $driver = Driver::where('user_id', Auth::id())
-            ->where('available', true)
             ->where('approval_status', 'Approved')
             ->first();
 
         if ($driver) {
             // check if driver has a pending delivery
-            if (Delivery::where('driver_id', $driver->id)->where('status', 'Pending')->exists()) {
+            //as soon as a pending delivery shows up the driver's availabilty changes to false
+            /*if (Delivery::where('driver_id', $driver->id)->where('status', 'Pending')->exists()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'You have a pending delivery.'
+                ], 400);
+            }*/
+            if ($sale_order = SaleOrder::where("id", $request->sales_id)->where('status', 'Pending')->first()) {
+                Delivery::create([
+                    'driver_id' => $driver->id,
+                    'sales_id' => $request->sales_id,
+                    'delivery_fee' => $request->delivery_fee,
+                ]);
+                $sale_order->status = "Pending Start";
+                $sale_order->save();
+            } else {
+                //remember to set the driver's availability back to true
+                $driver->available = true;
+                $driver->save();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Delivery request has been cancelled'
                 ], 400);
             }
 
@@ -500,23 +737,44 @@ class DriverController extends Controller
 
                 // make driver unavailable
                 $driver->available = false;
-
-                Delivery::create([
-                    'driver_id' => $driver->id,
-                    'sales_id' => $request->sales_id,
-                    'delivery_fee' => $request->delivery_fee,
-                ]);
+                Log::info($notif->setNotification(new \App\Models\Notification([
+                    "user_id" => $sale_order->user_id,
+                    "title" => "Order #" . $sale_order->order_number . " Delivery Was Accepted",
+                    "content" => "Your order delivery request was accepted by the driver. You can open the order to track the status of your delivery. Thanks for using Dash Shops",
+                    "type" => "Sale Order",
+                    "source_id" => $sale_order->id,
+                    "has_read" => false,
+                    "trash" => false
+                ])));
             } else {
                 $driver->acceptance_rating = [
                     'total' => $driver->acceptance_rating['total'],
                     'count' => $driver->acceptance_rating['count'] + 1,
                 ];
 
+                //remember to set the driver's availability back to true
+                $driver->available = true;
+                $sale_order->status = "Rejected by Driver";
+                $sale_order->save();
+
+
+
+
                 // log rejected delivery
                 RejectedDelivery::create([
                     'driver_id' => $driver->id,
                     'sales_id' => $request->sales_id,
+                    'delivery_fee' => $sale_order->delivery_fee
                 ]);
+                Log::info($notif->setNotification(new \App\Models\Notification([
+                    "user_id" => $sale_order->user_id,
+                    "title" => "Order #" . $sale_order->order_number . " Delivery Aot Accepted",
+                    "content" => "Your order delivery request was not accepted by the driver. Please open the order to selected another driver",
+                    "type" => "Sale Order",
+                    "source_id" => $sale_order->id,
+                    "has_read" => false,
+                    "trash" => false
+                ])));
             }
 
             $driver->save();
@@ -664,5 +922,132 @@ class DriverController extends Controller
             'status' => false,
             'message' => 'Delivery not found'
         ], 404);
+    }
+    //get pending driver request
+    public function getPendingDeliveryRequest(Request $request)
+    {
+        $user = $request->user();
+        $driver = Driver::where("user_id", $user->id)->first();
+
+        if ($sale_order = SaleOrder::with('user')->with('sales')
+            ->with('sales.retailer')->where('driver_id', $driver->id)->where('status', "Pending")->first()
+        ) {
+            return
+                response()->json([
+                    'status' => true,
+                    'data' => $sale_order
+                ], 200);
+        } else {
+            return
+                response()->json([
+                    'status' => true,
+                    'message' => 'No pending delivery at this time'
+                ], 201);
+        }
+    }
+    public function deliveryHistory(Request $request)
+    {
+        $user = $request->user();
+        $status = "all";
+        if ($request->has('status'))
+            $status = $request->status;
+        Log::info($status);
+        if ($driver = Driver::where('user_id', $user->id)->first()) {
+            if ($status != "rejected") {
+                $deliveries = Delivery::with("sale_order")->with('sale_order.user')->with('sale_order.sales')->with('sale_order.sales.retailer')
+                    ->where('driver_id', $driver->id);
+                if ($status != "all") {
+                    $deliveries = $deliveries->where('status', $status);
+                }
+                $deliveries = $deliveries->orderBy('created_at', 'desc')
+                    ->get();
+            } else {
+                $deliveries = RejectedDelivery::with("sale_order")->with('sale_order.user')->with('sale_order.sales')->with('sale_order.sales.retailer')
+                    ->where('driver_id', $driver->id)
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+                $deliveries = RejectedDeliveryResource::collection($deliveries);
+            }
+            return
+                response()->json([
+                    'status' => true,
+                    'data' => $deliveries
+                ], 200);
+        } else {
+            return
+                response()->json([
+                    'status' => false,
+                    'message' => 'Could not find driver'
+                ], 404);
+        }
+    }
+    function approveDriver(Request $request){
+        if($driver = Driver::find($request->id)){
+            $driver->approval_status = "Approved";
+            $driver->save();
+            $notif = new \App\Http\Controllers\NotificationsController();
+            $notif->setDriverNotification(new \App\Models\DriverNotification([
+                "driver_id" => $driver->id,
+                "title" => "Dash shop Driver Profile has been approved",
+                "content" => "Your driver's profile has been approved by Dash shops. Thanks for using Dash Shops",
+                "type" => "Driver",
+                "source_id" => $driver->id,
+                "has_read" => false,
+                "trash" => false
+            ]));
+            return response()->json([
+                "status" => true,
+                "message" => "Driver profile has been approved"
+            ], 200);
+        }
+    }
+    function denyDriver(Request $request)
+    {
+        if ($driver = Driver::find($request->id)) {
+            $driver->approval_status = "Denied";
+            $driver->save();
+            $notif = new \App\Http\Controllers\NotificationsController();
+            $notif->setDriverNotification(new \App\Models\DriverNotification([
+                "driver_id" => $driver->id,
+                "title" => "Dash shop driver profile approval was denied",
+                "content" => "Your driver's profile has been rejected by Dash shops for the following reason: " . $request->reason . ". Kindly review and update the product listing.",
+                "type" => "Driver",
+                "source_id" => $driver->id,
+                "has_read" => false,
+                "trash" => false
+            ]));
+            return response()->json([
+                "status" => true,
+                "message" => "Driver profile has been rejected"
+            ], 200);
+        }
+    }
+    function searchDrivers(Request $request){
+        $state = $request->has('state') ? $request->get('state') : "0";
+        $page = $request->has('page') ? $request->get('page') : 1;
+
+        $status = $request->has('status') ? $request->get('status') : "all";
+        $search = $request->has('search') ? $request->get('search') : "";
+
+        $drivers = Driver::with('user')->join('users','users.id','=','drivers.user_id')->select('drivers.*');
+        if($state!="0" && $state != "all"){
+            $drivers = $drivers->where('users.state',$state);
+        }
+        if ($status != "all") {
+            $drivers = $drivers->where('drivers.status', $status);
+        }
+        $drivers = $drivers->get();
+        //var_dump()
+
+        return view('pages.drivers-table', compact(['drivers']));
+
+    }
+    function showDrivers(Request $request){
+        
+        $states = State::all();
+        $total_downloads = $this->getTotalDownloads(); // CouponDownloads::sum('Downloads');
+        $total_clicks = $this->getTotalClicks(); //CouponClicks::sum('clicks');
+        $total_redemptions = $this->getTotalRedemptions(); // CouponRedeemed::count();
+        return view('pages.drivers', compact(['states', 'total_downloads', 'total_clicks', 'total_redemptions']));
     }
 }

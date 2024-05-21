@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Driver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Delivery extends Model
 {
@@ -48,5 +49,14 @@ class Delivery extends Model
     public function rating()
     {
         return $this->hasOne(DriverRating::class);
+    }
+    /**
+     * Get the sale order that the sales belongs to
+     *
+     * @return BelongsTo
+     */
+    public function sale_order(): BelongsTo
+    {
+        return $this->belongsTo(SaleOrder::class, 'sales_id');
     }
 }

@@ -120,7 +120,7 @@ class RetailerController extends Controller
         $total_retailers = Retailer::count();
         $total_approved = Retailer::where('approval_status', '=', 'approved')->count();
         $total_vip = Vip::where('expiry_date', '>=', date('Y-m-d H:i:s'))->count();
-        $retailer = Retailer::findorFail($id);
+        $retailer = Retailer::with('createdBy')->findorFail($id);
         $category = DB::table('retailers')
             ->join('categories', 'categories.id', '=', 'retailers.type_of_business')
             ->select('retailers.id', 'retailers.business_name', 'categories.name', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.zip_code', 'retailers.web_url',)
@@ -275,8 +275,8 @@ class RetailerController extends Controller
                 'business_name' => 'required|unique:retailers,business_name',
                 'business_address' => 'required',
                 'firstname' => 'required',
-                'username' => 'required',
                 'lastname' => 'required',
+                "phone_number" => 'required|phone|unique:retailers,phone_number',
                 'open_day' => 'required',
                 'open_time' => 'required',
                 'closed_time' => 'required',
@@ -284,7 +284,6 @@ class RetailerController extends Controller
                 'type_of_business' => 'required',
                 'city' => 'required',
                 'zip_code' => 'required',
-                'island' => 'required',
                 'email' => 'required|email|unique:retailers,email',
                 'password' => 'required',
                 'banner_image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
@@ -645,14 +644,14 @@ class RetailerController extends Controller
         $product_state = DB::table('product_variation')
             ->join('products', 'products.id', '=', 'product_variation.product_id')
             ->join('retailers', 'retailers.id', '=', 'products.store_id')
-            ->join('states','states.name','=','retailers.state')
+            ->join('states', 'states.name', '=', 'retailers.state')
             ->select("states.*")
             ->where("products.status", "=", 1)
             ->where("product_variation.quantity", ">", 0)
             ->where("retailers.approval_status", "=", "APPROVED")
             ->groupBy("states.id")->get()->toArray();
 
-        $states = $this->uniqueArray(array_merge($product_state, $coupon_states),"id");
+        $states = $this->uniqueArray(array_merge($product_state, $coupon_states), "id");
         sort($states);
         return response()->json([
             "data" => $states
@@ -689,9 +688,9 @@ class RetailerController extends Controller
         if (Retailer::where('id', $id)->exists()) {
             //$retailer = Retailer::find($id);
             $retailer = DB::table('retailers')
-            ->join('categories', 'categories.id', '=', 'retailers.type_of_business')
-                ->select("retailers.*","categories.name as category_name")
-                ->where("retailers.id",$id)
+                ->join('categories', 'categories.id', '=', 'retailers.type_of_business')
+                ->select("retailers.*", "categories.name as category_name")
+                ->where("retailers.id", $id)
                 ->first();
             return response()->json([
                 "message" => "Retailer Found",
@@ -754,24 +753,32 @@ class RetailerController extends Controller
         }
     }
 
-    public function updateLogo(Request $request, Retailer $id)
+    public function updateLogo(Request $request, int $id)
     {
+
+        //var_dump($id);
+        //die();
 
 
         // Validate the image upload
         $request->validate([
             'banner_image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
+        $retailer = Retailer::find($id);
+
 
         $imageName = time() . '.' . $request->banner_image->extension();
-        $request->banner_image->move(public_path('images'), $imageName);
+        if (file_exists(public_path('images/retailer' . $retailer->banner_image))) {
+            unlink(public_path('images/retailers' . $retailer->banner_image));
+        }
+        $request->banner_image->move(public_path('images/retailers'), $imageName);
         // Update the retailer's logo image
 
-        Retailer::find($id)->update([
+        $retailer->update([
             'banner_image' => $imageName
         ]);
 
-        return redirect()->route('retailer')->with('success', 'Retailer logo updated successfully');
+        return redirect()->route('retailer',['id'=>$id])->with('success', 'Retailer logo updated successfully');
     }
 
     public function updateBanner(Request $request)

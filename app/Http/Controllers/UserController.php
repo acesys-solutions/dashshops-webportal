@@ -156,9 +156,11 @@ class UserController extends Controller
         $request->validate([
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
-        
+
         if (file_exists(public_path('images/' . $user->photo))) {
-            unlink(public_path('images/' . $user->photo));
+            if ($user->photo != "users/user.png") {
+                unlink(public_path('images/' . $user->photo));
+            }
         }
         $imageName = time() . '.' . $request->image->extension();
         $request->image->move(public_path('images'), $imageName);
@@ -223,6 +225,21 @@ class UserController extends Controller
     {
         $user = $request->user();
         //User::find();
+        if ($user) {
+            return response()->json([
+                "message" => "Fetch Successful",
+                "data" => $user
+            ], 200);
+        } else {
+            return response()->json([
+                "message" => "User Not Found"
+            ], 404);
+        }
+    }
+
+    public function getUserDetails(Request $request, $id)
+    {
+        $user = User::find($id);
         if ($user) {
             return response()->json([
                 "message" => "Fetch Successful",

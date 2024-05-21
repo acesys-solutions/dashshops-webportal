@@ -37,7 +37,7 @@ class Product extends Model
     /**
      * Get the store that owns the product
      */
-    public function store()
+    public function retailer()
     {
         return $this->belongsTo(Retailer::class, 'store_id', 'id');
     }

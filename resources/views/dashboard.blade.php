@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
     {{-- dropbox CDN  --}}
+    <script src=" https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.5.0/min/dropzone.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.5.0/dropzone.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
@@ -118,8 +119,8 @@
                             @if(auth()->user()->admin == 1)
                             <a class="dropdown-item" href="{{ route('admin-portal') }}">Admin Settings</a>
                             <a class="dropdown-item" href="{{ route('categories') }}">Manage Categories</a>
-
                             <a class="dropdown-item" href="{{ route('ads') }}">Manage Ads</a>
+                            <a class="dropdown-item" href="{{ route('drivers') }}">Manage Drivers</a>
                             @endif
                             @if(auth()->user()->admin == 2)
                             <a class="dropdown-item" href="{{ route('edit-user') }}">Edit Profile</a>
