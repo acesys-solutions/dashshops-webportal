@@ -70,7 +70,7 @@ class CouponRedeemController extends Controller
             ->join('coupons', 'coupons.id', '=', 'coupon_redemption.coupon_id')
             ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
             ->join('categories', 'categories.id', '=', 'coupons.category_id')
-            ->select(DB::raw('coupon_redemption.id as analytics_id,(select created_at from coupon_redemption where coupon_id = coupons.id order by created_at desc limit 1) as last_date, (select count(*) from coupon_redemption where coupon_id = coupons.id) as click_count, coupons.*, retailers.business_name, retailers.banner_image, retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description, categories.name as category_name'))
+            ->select(DB::raw('coupon_redemption.id as analytics_id,(select created_at from coupon_redemption where coupon_id = coupons.id order by created_at desc limit 1) as last_date, (select count(*) from coupon_redemption where coupon_id = coupons.id) as click_count, coupons.*, retailers.business_name,retailers.rating, retailers.banner_image, retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description, categories.name as category_name'))
             ->where('retailers.id', '=', $retailer_id)
             ->orderBy('coupon_redemption.created_at', 'desc')
             ->get();

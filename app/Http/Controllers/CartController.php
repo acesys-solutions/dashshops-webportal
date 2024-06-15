@@ -60,19 +60,38 @@ class CartController extends Controller
         $user = $request->user();
         $products = json_decode($request->products_variant_ids, true);
         foreach ($products as $product) {
-            if (Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->exists()) {
-                $cart = Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->first();
-                if ((int)$product["quantity"]  != 0) {
-                    $cart->quantity =  (int)$product["quantity"];
-                    $cart->save();
-                }
-            } else {
+            if ($pv = ProductVariant::find($product["product_variation_id"])) {
+                if (Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->exists()) {
+                    $cart = Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->first();
+                    if ((int)$product["quantity"] != 0) {
 
-                Cart::create([
-                    "user_id" => $user->id,
-                    "product_variation_id" => $product["product_variation_id"],
-                    "quantity" => (int)$product["quantity"],
-                ]);
+                        if ((int)$product["quantity"] < $pv->quantity) {
+                            $cart->quantity =  (int)$product["quantity"];
+                            $cart->save();
+                        } else {
+                            if ($pv->quantity == 0) {
+                                $cart->delete();
+                            } else {
+                                $cart->quantity =  $pv->quantity;
+                                $cart->save();
+                            }
+                        }
+                    }
+                } else {
+                    if ((int)$product["quantity"] < $pv->quantity) {
+                        Cart::create([
+                            "user_id" => $user->id,
+                            "product_variation_id" => $product["product_variation_id"],
+                            "quantity" => (int)$product["quantity"],
+                        ]);
+                    }else if($pv->quantity > 0){
+                        Cart::create([
+                            "user_id" => $user->id,
+                            "product_variation_id" => $product["product_variation_id"],
+                            "quantity" => $pv->quantity,
+                        ]);
+                    }
+                }
             }
         }
         return response()->json(
@@ -104,15 +123,35 @@ class CartController extends Controller
         $user = $request->user();
         if (Cart::where(["product_variation_id" => $id, "user_id" => $user->id])->exists()) {
             $cart = Cart::where(["product_variation_id" => $id, "user_id" => $user->id])->first();
-            $cart->quantity = $request->quantity;
-            $cart->update();
-            return response()->json(
-                [
-                    'status' => true,
-                    'message' => "Cart Item Updated"
-                ],
-                200
-            );
+            if ($pv = ProductVariant::find($id)) {
+                if ((int)$request->quantity < $pv->quantity) {
+                    $cart->quantity = $request->quantity;
+                    $cart->update();
+                    return response()->json(
+                        [
+                            'status' => true,
+                            'message' => "Cart Item Updated"
+                        ],
+                        200
+                    );
+                } else {
+                    return response()->json(
+                        [
+                            'status' => false,
+                            'message' => "Quantity exceeds retailer's inventory"
+                        ],
+                        400
+                    );
+                }
+            } else {
+                return response()->json(
+                    [
+                        'status' => false,
+                        'message' => "Product is no longer available"
+                    ],
+                    404
+                );
+            }
         } else {
             return response()->json(
                 [
@@ -154,7 +193,7 @@ class CartController extends Controller
 
         foreach ($products as $product) {
             if (Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->exists()) {
-                $cart = Cart::where(["product_variation_id" => $product, "user_id" => $user->id])->first();
+                $cart = Cart::where(["product_variation_id" => $product["product_variation_id"], "user_id" => $user->id])->first();
                 $cart->quantity = $cart->quantity + (int)$product["quantity"];
                 $cart->save();
             } else {

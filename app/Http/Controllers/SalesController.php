@@ -10,6 +10,7 @@ use App\Models\Cart;
 use App\Models\Driver;
 use App\Models\ProductVariant;
 use App\Models\Tracking;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -73,7 +74,7 @@ class SalesController extends Controller
         $products = $products->groupBy("cart.id")
             ->get();
         $sale_records = [];
-        $count = 00;
+        $count = 0;
         foreach ($products as $product) {
             $count++;
             $ext = pathinfo(
@@ -155,6 +156,61 @@ class SalesController extends Controller
             'message' => 'Sale Order not found'
         ], 404);
     }
+    function cancelPendingSaleOrder(Request $request)
+    {
+        $user = $request->user();
+        $sale_order_id = $request->id;
+        if ($sale_order = SaleOrder::with('sales')->with('driver')->where(['user_id' => $user->id, 'id' => $sale_order_id, "status" => "pending"])->first()) {
+            foreach ($sale_order->sales as $sale) {
+                Cart::create([
+                    "user_id" => $user->id,
+                    "product_variation_id" => $sale->product_variation_id,
+                    "quantity" => $sale->quantity,
+                ]);
+            }
+            Sale::whereIn('order_id', [$sale_order_id])->delete();
+            $notif = new \App\Http\Controllers\NotificationsController();
+            $notif->setDriverNotification(new \App\Models\DriverNotification([
+                "user_id" => $sale_order->driver->user_id,
+                "title" => "Order #" . $sale_order->order_number . ". has been cancelled by custom",
+                "content" => "Your pending request for delivery, #" . $sale->order_number . " was just cancelled by the buyer.",
+                "type" => "Cancelled Sale Order",
+                "source_id" => $sale_order->id,
+                "has_read" => false,
+                "trash" => false
+            ]));
+            Driver::find($sale_order->driver_id)->update(['available' => true]);
+            $sale_order->delete();
+
+            return response()->json([
+                'status' => true,
+                'message' => "Order has been cancelled and your items returned to your shopping cart",
+            ]);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => "Sorry, this order cannot be cancelled at this time. Please contact admin@thedashshop.com if you still want to can thiis order",
+            ], 404);
+        }
+    }
+    function getUserPendingDeliverySaleOrder(Request $request)
+    {
+        $user = $request->user();
+
+        $sale_orders = SaleOrder::with('sales')
+            ->with('sales.retailer')
+            ->where("sale_orders.user_id", $user->id)
+            ->where('sale_orders.status', "<>", "Delivered")
+            ->where('sale_orders.status', "<>", "Cancelled")
+            ->where('sale_orders.is_store_pickup', false)
+            ->where('sale_orders.status', "<>", "Cancelled By Retailer")
+            ->where('sale_orders.status', "<>", "Rejected By Driver")
+            ->get();
+        return response()->json([
+            'status' => true,
+            'data' => $sale_orders,
+        ]);
+    }
     function getUserPendingSaleOrder(Request $request)
     {
         $user = $request->user();
@@ -164,6 +220,8 @@ class SalesController extends Controller
             ->where("sale_orders.user_id", $user->id)
             ->where('sale_orders.status', "<>", "Delivered")
             ->where('sale_orders.status', "<>", "Cancelled")
+            ->where('sale_orders.status', "<>", "Rejected By Driver")
+            ->where('sale_orders.status', "<>", "Cancelled By Retailer")
             ->get();
         return response()->json([
             'status' => true,
@@ -188,7 +246,7 @@ class SalesController extends Controller
                 'status' => true,
                 'data' => $tracking,
             ]);
-        }else{
+        } else {
             return response()->json([
                 'status' => false,
                 'message' => "Delivery Tracking not available",
@@ -248,13 +306,46 @@ class SalesController extends Controller
             'data' => $sale_orders,
         ]);
     }
+    function getDriverCurrentSchedule2(Request $request)
+    {
+        $user = User::find(29);
+        if ($driver = Driver::where('user_id', $user->id)->first()) {
+            if ($sale_order = SaleOrder::with('user')->with('sales')->with('sales.retailer')
+            ->with('sales.retailer.user')->where(["sale_orders.driver_id" => $driver->id])
+                ->where("sale_orders.status", "<>", "cancelled")
+                ->where("sale_orders.status", "<>", "delivered")
+                ->where("sale_orders.status", "<>", "cancelled by retailer")
+                ->where("sale_orders.status", "<>",  "Rejected By Driver")
+                ->where("sale_orders.status", "<>", "pending")
+                ->first()
+            ) {
+                return response()->json([
+                    'status' => true,
+                    'data' => $sale_order,
+                ]);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => "No pending sale order",
+                ], 204);
+            }
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => "Driver not found",
+            ], 404);
+        }
+    }
     function getDriverCurrentSchedule(Request $request)
     {
         $user = $request->user();
         if ($driver = Driver::where('user_id', $user->id)->first()) {
             if ($sale_order = SaleOrder::with('user')->with('sales')->with('sales.retailer')
                 ->with('sales.retailer.user')->where(["sale_orders.driver_id" => $driver->id])
-                ->where("sale_orders.status", "<>", "cancel")->where("sale_orders.status", "<>", "delivered")
+                ->where("sale_orders.status", "<>", "cancelled")
+                ->where("sale_orders.status", "<>", "delivered")
+                ->where("sale_orders.status", "<>", "cancelled by retailer")
+                ->where("sale_orders.status", "<>",  "Rejected By Driver")
                 ->where("sale_orders.status", "<>", "pending")
                 ->first()
             ) {

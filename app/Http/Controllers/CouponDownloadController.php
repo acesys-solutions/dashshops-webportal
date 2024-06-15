@@ -50,9 +50,9 @@ class CouponDownloadController extends Controller
             ->join('coupons', 'coupons.id', '=', 'coupons_download.coupon_id')
             ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
             ->join('categories', 'categories.id', '=', 'coupons.category_id')
-            ->select(DB::raw('coupons_download.id as analytics_id,(select created_at from coupons_download where coupon_id = coupons.id order by created_at desc limit 1) as last_date, (select count(*) from coupons_download where coupon_id = coupons.id) as click_count, coupons.*, retailers.business_name, retailers.banner_image, retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description, categories.name as category_name'))
+            ->select(DB::raw('coupons_download.id as analytics_id,(select created_at from coupons_download where coupon_id = coupons.id order by created_at desc limit 1) as last_date, (select count(*) from coupons_download where coupon_id = coupons.id) as click_count, coupons.*, retailers.business_name,retailers.rating,retailers.banner_image, retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description, categories.name as category_name'))
             ->where('retailers.id', '=', $retailer_id)
-            ->orderBy('coupons_download.created_at', 'desc')
+            ->orderBy('click_count', 'desc')
             ->get();
 
         $allMd5s = array_map(function ($v) {
@@ -76,7 +76,7 @@ class CouponDownloadController extends Controller
             ->join('retailers', 'coupons.retailer_id', '=', 'retailers.id')
             ->join('categories', 'coupons.category_id', '=', 'categories.id')
             ->leftJoin('coupon_redemption', 'coupons_download.id', '=', 'coupon_redemption.coupon_download_id')
-            ->select('coupon_redemption.id as redemption_id','coupons_download.id as download_id','coupons_download.coupon_code','coupons_download.coupon_id','coupons_download.user_id as creator','coupons_download.created_at as download_date' , 'coupons.*','retailers.business_name','retailers.banner_image','retailers.business_address','retailers.city','retailers.state','retailers.phone_number','retailers.email','retailers.business_description', 'categories.name as category_name')
+            ->select('coupon_redemption.id as redemption_id','coupons_download.id as download_id','coupons_download.coupon_code','coupons_download.coupon_id','coupons_download.user_id as creator','coupons_download.created_at as download_date' , 'coupons.*','retailers.business_name', 'retailers.rating', 'retailers.banner_image','retailers.business_address','retailers.city','retailers.state','retailers.phone_number','retailers.email','retailers.business_description', 'categories.name as category_name')
             ->where('coupons_download.user_id', '=', $id)
             ->get();
         return response()->json([
@@ -90,7 +90,7 @@ class CouponDownloadController extends Controller
             ->join('retailers', 'coupons.retailer_id', '=', 'retailers.id')
             ->join('categories', 'coupons.category_id', '=', 'categories.id')
             ->leftJoin('coupon_redemption', 'coupons_download.id', '=', 'coupon_redemption.coupon_download_id')
-            ->select('coupon_redemption.id as redemption_id','coupons_download.id as download_id','coupons_download.coupon_code','coupons_download.coupon_id','coupons_download.user_id as creator','coupons_download.created_at as download_date' , 'coupons.*','retailers.business_name','retailers.banner_image','retailers.business_address','retailers.city','retailers.state','retailers.phone_number','retailers.email','retailers.business_description', 'categories.name as category_name')
+            ->select('coupon_redemption.id as redemption_id','coupons_download.id as download_id','coupons_download.coupon_code','coupons_download.coupon_id','coupons_download.user_id as creator','coupons_download.created_at as download_date' , 'coupons.*','retailers.business_name','retailers.banner_image', 'retailers.rating', 'retailers.business_address','retailers.city','retailers.state','retailers.phone_number','retailers.email','retailers.business_description', 'categories.name as category_name')
             ->where('coupons_download.user_id', '=', $user_id)
             ->where('coupons.qr_code', '=', $qr_code)
             ->first();

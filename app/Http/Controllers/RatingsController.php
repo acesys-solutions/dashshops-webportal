@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Rating;
 use App\Models\CouponClicks;
+use App\Models\Retailer;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,12 +13,13 @@ use Illuminate\Support\Facades\DB;
 class RatingsController extends Controller
 {
     //
-    public function getRetailerRatings($retailer_id){
+    public function getRetailerRatings($retailer_id)
+    {
         $ratings = Rating::where();
         $ratings = DB::table('ratings')
             ->join('retailers', 'retailers.id', '=', 'ratings.retailer_id')
             ->join('users', 'users.id', '=', 'ratings.user_id')
-            ->select('ratings.*','retailers.business_name','users.firstname as user_firstname')
+            ->select('ratings.*', 'retailers.business_name', 'users.firstname as user_firstname')
             ->where('ratings.retailer_id', '=', $retailer_id)
             ->where('ratings.approval_status', '=', 'APPROVED')
             ->whereNotNull('ratings.comment')
@@ -29,53 +31,74 @@ class RatingsController extends Controller
         ]);
     }
 
-    public function getRetailerRatingSummary($retailer_id){
+    public function setRating(Request $request)
+    {
+        $retailers = Retailer::all();
+        foreach ($retailers as $retailer) {
+            if ($summary = Rating::select(DB::raw("AVG(rating) as rating_average"))
+                ->where('retailer_id', '=', $retailer->id)
+                ->groupBy('retailer_id')
+                ->first()
+            ) {
+                $retailer->rating = $summary->rating_average;
+                $retailer->save();
+            }
+        }
+        return response()->json([
+            "message" => "Ratings Set"
+        ]);
+    }
+
+
+    public function getRetailerRatingSummary($retailer_id)
+    {
         $summary = Rating::select(DB::raw("AVG(rating) as rating_average, (select count(*) from ratings where comments='APPROVED') as review_count"))
             ->where('retailer_id', '=', $retailer_id)
             ->groupBy('retailer_id')
             ->first();
-            return response()->json([
-                "data" => $summary,
-                "message" => "Fetch Successful"
-            ]);
+        return response()->json([
+            "data" => $summary,
+            "message" => "Fetch Successful"
+        ]);
     }
 
-    public function update(Request $request){
+    public function update(Request $request)
+    {
         $rating = new Rating();
-        if($request->has('id')){
-            if(Rating::where('id', $request->id)->exists()){
+        if ($request->has('id')) {
+            if (Rating::where('id', $request->id)->exists()) {
                 $rating = Rating::find($request->id);
-            } 
+            }
         }
         $user_id = 0;
-        if($request->has('user_id')){
-            if(User::where('id', $request->user_id)->exists()){
+        if ($request->has('user_id')) {
+            if (User::where('id', $request->user_id)->exists()) {
                 $user = User::where('id', $request->user_id)->first();
                 $user_id = $request->user_id;
-                if((int)$user->retailer_id == (int)$request->retailer_id){
-                    return response()->json(["message"=>"Sorry, you cannot rate your own store"],400);
+                if ((int)$user->retailer_id == (int)$request->retailer_id) {
+                    return response()->json(["message" => "Sorry, you cannot rate your own store"], 400);
                 }
             }
-        }else if($request->has('is_retailer_id')){
-            if(User::where('retailer_id', $request->is_retailer_id)->exists()){
-                if((int)$request->is_retailer_id == (int)$request->retailer_id){
-                    return response()->json(["message"=>"Sorry, you cannot rate your own store"],400);
+        } else if ($request->has('is_retailer_id')) {
+            if (User::where('retailer_id', $request->is_retailer_id)->exists()) {
+                if ((int)$request->is_retailer_id == (int)$request->retailer_id) {
+                    return response()->json(["message" => "Sorry, you cannot rate your own store"], 400);
                 }
                 $user = User::where('retailer_id', $request->is_retailer_id)->first();
                 $user_id = $user->id;
-            }else{
+            } else {
                 return response()->json([
                     "message" => "User Record Not Found"
                 ], 404);
             }
-        }else{
+        } else {
             return response()->json([
                 "message" => "User Record Not Found"
             ], 404);
         }
 
         $rating->user_id = $user_id;
-        if($request->has('comments') && $request->comments != ""){
+        if ($request->has('comments') && $request->comments != "") {
             $rating->comments = $request->comments;
             $rating->approval_status = "PENDING";
         }
@@ -83,27 +106,33 @@ class RatingsController extends Controller
         $rating->retailer_id = $request->retailer_id;
         $rating->save();
 
+        $summary = Rating::select(DB::raw("AVG(rating) as rating_average, (select count(*) from ratings where comments='APPROVED') as review_count"))
+            ->where('retailer_id', '=', $request->retailer_id)
+            ->groupBy('retailer_id')
+            ->first();
+        Retailer::find($request->retailer_id)->update(["rating" => $summary->rating_average]);
+
         return response()->json([
             "message" => "Ratings Added",
             "data" => $rating
         ], 201);
     }
 
-    public function getUserRetailerRating($user_id,$retailer_id): JsonResponse
+    public function getUserRetailerRating($user_id, $retailer_id): JsonResponse
     {
         $rating = Rating::where('user_id', $user_id)->where('retailer_id', $retailer_id)->first();
-        if(!empty($rating)) {
-            return response()->json(['data'=>$rating,"status"=>"ok"],200);
-        }else{
+        if (!empty($rating)) {
+            return response()->json(['data' => $rating, "status" => "ok"], 200);
+        } else {
             return response()->json([
-                "message" => "Record  not Found","status"=>"not found"
+                "message" => "Record  not Found", "status" => "not found"
             ], 201);
         }
     }
-   
+
     public function destroy($id): JsonResponse
     {
-        if(Rating::where('id', $id)->exists()){
+        if (Rating::where('id', $id)->exists()) {
             $rating = Rating::find($id);
             $rating->delete();
             return response()->json([

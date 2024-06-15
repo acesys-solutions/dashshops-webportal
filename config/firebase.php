@@ -50,7 +50,7 @@ return [
              *
              */
 
-            'credentials' => env('FIREBASE_CREDENTIALS',storage_path('app/dashshops-64cc9-5848e97f12b8.json')),
+            'credentials' => storage_path( env('FIREBASE_CREDENTIALS')),
 
             /*
              * ------------------------------------------------------------------------

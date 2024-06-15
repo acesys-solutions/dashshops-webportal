@@ -57,9 +57,16 @@ class Controller extends BaseController
         (select max(product_variation.sale_price) where product_variation.product_id = products.id) as max_sale_price, 
         (select max(product_variation.on_sale) where product_variation.product_id = products.id and product_variation.status = 1) as product_is_on_sale, 
         (select id from product_favorites where product_favorites.product_variation_id=product_variation.id and product_favorites.user_id=" . $userid . " limit 0,1) as favorite, 
-        retailers.business_name,retailers.banner_image,retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description,
+        retailers.business_name,retailers.rating,retailers.banner_image,retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description,
         retailers.longitude,retailers.latitude, retailers.from_mobile, retailers.from_mobile, categories.name as category_name';
-        return DB::raw($str);
+        return $str;
+    }
+    function getSelectDBRawProducts2()
+    {
+        $str = 'products.*,  
+        retailers.business_name,retailers.rating,retailers.banner_image,retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description,
+        retailers.longitude,retailers.latitude, retailers.from_mobile, retailers.from_mobile, categories.name as category_name';
+        return $str;
     }
 
     function getSelectDBRawCartDisplay()
@@ -71,7 +78,7 @@ class Controller extends BaseController
         (select max(product_variation.sale_price) where product_variation.product_id = products.id) as max_sale_price, 
         (select max(product_variation.on_sale) where product_variation.product_id = products.id and product_variation.status = 1) as product_is_on_sale, 
         (select id from product_favorites where product_favorites.product_variation_id=product_variation.id and product_favorites.user_id=" . $userid . " limit 0,1) as favorite, 
-        retailers.business_name,retailers.banner_image,retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description,
+        retailers.business_name,retailers.rating,retailers.banner_image,retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description,
         retailers.longitude,retailers.latitude, retailers.from_mobile, retailers.from_mobile, categories.name as category_name';
         return $str;
     }
@@ -90,7 +97,7 @@ class Controller extends BaseController
         products.product_name, products.id as product_id, products.image,product_variation.status,
         product_variation.quantity as stock_value, product_variation.low_stock_value, product_variation.sale_price,product_variation.price,
         product_variation.variant_types,product_variation.variant_type_values,product_variation.on_sale,
-        retailers.business_name,retailers.banner_image,retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description,
+        retailers.business_name,retailers.rating,retailers.banner_image,retailers.business_address, retailers.city, retailers.state, retailers.phone_number, retailers.email,retailers.business_description,
         retailers.longitude,retailers.latitude, retailers.from_mobile, retailers.from_mobile, categories.name as category_name';
         return DB::raw($str);
     }
