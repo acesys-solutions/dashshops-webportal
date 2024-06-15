@@ -33,7 +33,7 @@ class CouponController extends Controller
             ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
             ->join('users', 'users.retailer_id', '=', 'retailers.id')
             ->join('categories', 'categories.id', '=', 'coupons.category_id')
-            ->select('coupons.*', 'users.firstname', 'retailers.business_name', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'retailers.zip_code', 'retailers.island', 'retailers.longitude', 'retailers.from_mobile', 'retailers.latitude', 'categories.name as category_name');
+            ->select('coupons.*', 'users.firstname', 'retailers.business_name', 'retailers.banner_image', 'retailers.rating', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'retailers.zip_code', 'retailers.island', 'retailers.longitude', 'retailers.from_mobile', 'retailers.latitude', 'categories.name as category_name');
         if ($category != "0") {
             $coupons = $coupons->where('coupons.category_id', '=', $category);
         }
@@ -137,7 +137,7 @@ class CouponController extends Controller
         $coupons = DB::table('coupons')
             ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
             ->join('categories', 'categories.id', '=', 'coupons.category_id')
-            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.from_mobile', 'retailers.email', 'retailers.business_description', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
+            ->select('coupons.*', 'retailers.business_name', 'retailers.rating', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.from_mobile', 'retailers.email', 'retailers.business_description', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
             ->where('coupons.end_date', '>=', date('Y-m-d 23:59:59'))
             ->where('coupons.approval_status', 'Approved')
             ->where('retailers.approval_status', 'Approved');
@@ -162,7 +162,7 @@ class CouponController extends Controller
         $filtered_coupons = DB::table('coupons')
             ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
             ->join('categories', 'categories.id', '=', 'coupons.category_id')
-            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
+            ->select('coupons.*', 'retailers.business_name', 'retailers.rating', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
             ->where('coupons.end_date', '>=', date('Y-m-d 23:59:59'))
             ->where('coupons.approval_status', 'Approved')->where('retailers.approval_status', 'Approved');
         if ($catogory != 0) {
@@ -197,7 +197,7 @@ class CouponController extends Controller
         $filtered_coupons = DB::table('coupons')
             ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
             ->join('categories', 'categories.id', '=', 'coupons.category_id')
-            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.island', 'retailers.business_description', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
+            ->select('coupons.*', 'retailers.business_name', 'retailers.rating', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.island', 'retailers.business_description', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
             ->where('coupons.end_date', '>=', date('Y-m-d 23:59:59'))
             ->where('coupons.approval_status', 'Approved')->where('retailers.approval_status', 'Approved');
         if ($catogory != 0) {
@@ -243,7 +243,7 @@ class CouponController extends Controller
         $coupons = DB::table('coupons')
             ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
             ->join('categories', 'categories.id', '=', 'coupons.category_id')
-            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.from_mobile', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
+            ->select('coupons.*', 'retailers.business_name','retailers.rating', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.from_mobile', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
             ->where('coupons.end_date', '>=', date('Y-m-d 00:00:01'))
             ->where('coupons.offer_type', '=', $type);
         if ($category != 0) {
@@ -287,7 +287,7 @@ class CouponController extends Controller
         $coupons = DB::table('coupons')
             ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
             ->join('categories', 'categories.id', '=', 'coupons.category_id')
-            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'retailers.longitude', 'retailers.from_mobile', 'retailers.latitude', 'categories.name as category_name')
+            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.rating', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'retailers.longitude', 'retailers.from_mobile', 'retailers.latitude', 'categories.name as category_name')
             ->where('coupons.end_date', '>=', date('Y-m-d 00:00:01'))
             ->where('coupons.offer_type', '=', $type);
         if ($category != 0) {
@@ -332,7 +332,7 @@ class CouponController extends Controller
         $coupons = DB::table('coupons')
             ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
             ->join('categories', 'categories.id', '=', 'coupons.category_id')
-            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.island', 'retailers.business_description', 'retailers.from_mobile', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
+            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.rating', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.island', 'retailers.business_description', 'retailers.from_mobile', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
             ->where('coupons.end_date', '>=', date('Y-m-d 00:00:01'))
             ->where('coupons.offer_type', '=', $type);
         if ($category != 0) {
@@ -377,7 +377,7 @@ class CouponController extends Controller
         $coupons = DB::table('coupons')
             ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
             ->join('categories', 'categories.id', '=', 'coupons.category_id')
-            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'retailers.from_mobile', 'retailers.longitude', 'retailers.latitude', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
+            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.rating', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'retailers.from_mobile', 'retailers.longitude', 'retailers.latitude', 'retailers.longitude', 'retailers.latitude', 'categories.name as category_name')
             ->where('coupons.category_id', '=', $id);
         if ($type != "all")
             $coupons = $coupons->where('coupons.approval_status', '=', $type);
@@ -397,7 +397,7 @@ class CouponController extends Controller
         $filtered_coupons = DB::table('coupons')
             ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
             ->join('categories', 'categories.id', '=', 'coupons.category_id')
-            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'categories.name as category_name')
+            ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.rating', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'categories.name as category_name')
             ->where('retailers.zip_code', '=', $zip_code)
             ->where('coupons.approval_status', 'Approved')
             ->where('retailers.approval_status', 'Approved')
@@ -416,7 +416,7 @@ class CouponController extends Controller
             $coupon = DB::table('coupons')
                 ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
                 ->join('categories', 'categories.id', '=', 'coupons.category_id')
-                ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'categories.name as category_name')
+                ->select('coupons.*', 'retailers.business_name', 'retailers.banner_image', 'retailers.rating', 'retailers.business_address', 'retailers.city', 'retailers.state', 'retailers.phone_number', 'retailers.email', 'retailers.business_description', 'categories.name as category_name')
                 ->where('coupons.id', '=', $id)
                 ->first();
 

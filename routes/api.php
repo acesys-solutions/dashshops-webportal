@@ -21,6 +21,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VipController;
 use App\Http\Controllers\DriverSettingsController;
 use App\Http\Controllers\SalesController;
+use App\Http\Controllers\ProductClicksController;
+use App\Http\Controllers\PaymentController;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -45,13 +47,36 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/register', [AuthController::class, 'createUser']);
 Route::post('/register/retailer', [AuthController::class, 'createRetailerUser']);
 Route::post('/login', [AuthController::class, 'loginUser']);
+Route::post('/login-with-email', [AuthController::class, 'loginUserEmail']);
 Route::post('/login/retailer', [AuthController::class, 'loginRetailer']);
 Route::post('/change-password', [AuthController::class, 'changePasswordAPI']);
 Route::post('/forget-passwords', [ForgotPasswordController::class, 'forgetPasswordFormAPI']);
 Route::post('/resets-password', [ForgotPasswordController::class, 'resetPasswordFormAPI']);
 Route::post('/resets-password-firebase', [ForgotPasswordController::class, 'resetPasswordFirebase']);
+Route::post('/get-phone-email', [AuthController::class, 'getPhoneFromEmail']);
 Route::post('/verifyphonenumber', [AuthController::class, 'verifyPhoneNumber']);
 Route::post('/validatephonenumber', [AuthController::class, 'validatePhoneAuth']);
+Route::get('/set-ratings', [RatingsController::class, 'setRating']);
+Route::get('/products/can-add-to-cart/{id}/{quantity}', [ProductController::class, 'canAddToCart']);
+Route::get('/test-driver-schedule', [
+    SalesController::class, 'getDriverCurrentSchedule2'
+]);
+Route::group(['prefix' => '/payment-cards'], function () {
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/', [PaymentController::class, 'listCards']);
+        Route::get('/default', [PaymentController::class, 'getDefaultCard']);
+        
+        Route::put('/{id}',[PaymentController::class, 'makeCardDefault']);
+        Route::delete(
+            '/{id}',
+            [PaymentController::class, 'removeCard']
+        );
+        Route::post(
+            '/add',
+            [PaymentController::class, 'addPaymentCard']
+        );
+    });
+});
 
 //Notifications
 Route::get('/testnotification/{user_id}', [NotificationsController::class, 'testNotificatiion']);
@@ -70,15 +95,15 @@ Route::middleware('auth:sanctum')->group(function () {
         'getNotifications'
     ]);
     Route::get('/getdrivernotifications/{user_id}', [NotificationsController::class, 'getDriverNotifications']);
-    Route::get('/markasreaddriver/{id}',[NotificationsController::class, 'markAsReadDriver']);
+    Route::get('/markasreaddriver/{id}', [NotificationsController::class, 'markAsReadDriver']);
     Route::get('/markasread/{id}', [NotificationsController::class, 'markAsRead']);
     Route::get('/markallasread/{user_id}', [NotificationsController::class, 'markAllAsRead']);
     Route::get('/trashnotification/{id}', [NotificationsController::class, 'trashNotification']);
     Route::get('/trashdrivernotification/{id}', [NotificationsController::class, 'trashDriverNotification']);
-    
+
     Route::get('/getunreadnotificationcount/{user_id}', [NotificationsController::class, 'getUnreadCount']);
     Route::get('/getunreaddrivernotificationcount/{user_id}', [NotificationsController::class, 'getUnreadCountDriver']);
-    
+
 
     //Category
 
@@ -96,6 +121,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/clicks/retailer/{id}', [CouponClicksController::class, 'getByRetailer']);
     Route::put('/clicks/{id}', [CouponClicksController::class, 'update']);
     Route::delete('/clicks/{id}', [CouponClicksController::class, 'destroy']);
+
+    //productClicks
+    Route::get('/products/clicks/retailer/{id}', [ProductClicksController::class, 'getByRetailer']);
+    Route::put('/products/clicks/{id}', [ProductClicksController::class, 'update']);
+    Route::delete('/products/clicks/{id}', [ProductClicksController::class, 'destroy']);
+
+    //productAddtoCartStats
+    Route::get('/products/addtocartstats/retailer/{id}', [ProductClicksController::class, 'getByRetailerAddtoCartStats']);
+    Route::put('/products/addtocartstats/{id}', [ProductClicksController::class, 'updateAddtoCartStats']);
+    Route::delete('/products/addtocartstats/{id}', [ProductClicksController::class, 'destroyAddtoCartStats']);
 
     //Ratings
     Route::get('/ratings/{approval_status}', [RatingsController::class, 'getAll']);
@@ -146,6 +181,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [RetailerController::class, 'update']);
         Route::post('/update-banner', [RetailerController::class, 'updateBanner'])->name('update-banner');
         Route::delete('/{id}', [RetailerController::class, 'destroyAPI']);
+        Route::delete('/cancel-sale-item/{id}', [RetailerController::class, 'cancelSaleOrderItem']);
     });
 
     Route::group(['prefix' => '/products'], function () {
@@ -157,6 +193,7 @@ Route::middleware('auth:sanctum')->group(function () {
             'addtocart-product'
         );
         Route::delete('/removefromcart/{id}', [ProductController::class, 'removeFromCart'])->name('removefromcart-product');
+        Route::get('/can-place-order', [ProductController::class, 'canPlaceOrder']);
     });
     //carts
     Route::post('/carts', [CartController::class, 'add']);
@@ -200,8 +237,15 @@ Route::post('/register-ad-click', [AdsController::class, 'recordClick']);
 Route::group(['prefix' => '/products'], function () {
     Route::get('/{id}', [ProductController::class, 'getProduct'])->name('get-product');
     Route::get('/variants/{product_id}', [ProductController::class, 'getProductVariants'])->name('get-product-variants');
-    Route::get('/getrelevantproducts/{count}/{category?}/{search?}', [ProductController::class, 'getrelevantproducts']);
-    Route::get('/getrelevantproductsbylocation/{count}/{category?}/{city?}/{state?}/{search?}', [ProductController::class, 'getrelevantproducts2']);
+    Route::get('/activevariants/{product_id}', [ProductController::class, 'getActiveProductVariants'])->name('get-active-product-variants');
+    Route::get('/getrelevantproducts/{count}/{page?}/{category?}/{search?}', [ProductController::class, 'getrelevantproducts']);
+    Route::get('/getrelevantproductsbylocation/{count}/{page?}/{category?}/{city?}/{state?}/{search?}', [ProductController::class, 'getrelevantproducts2']);
+    Route::get('/clicks', [ProductClicksController::class, 'getAll']);
+    Route::get('/clicks/{id}', [ProductClicksController::class, 'show']);
+    Route::post('/clicks/add', [ProductClicksController::class, 'create']);
+    Route::get('/addtocartstats', [ProductClicksController::class, 'getAllAddtoCartStats']);
+    Route::get('/addtocartstats/{id}', [ProductClicksController::class, 'showAddtoCartStats']);
+    Route::post('/addtocartstats/add', [ProductClicksController::class, 'createAddtoCartStats']);
 });
 
 //ratings
@@ -251,6 +295,7 @@ Route::group(
                 Route::post('/create', [SalesController::class, 'create']);
                 Route::get('/getsalesorder/{id}', [SalesController::class, 'getSaleOrder']);
                 Route::get('/getpendingsalesorder', [SalesController::class, 'getUserPendingSaleOrder']);
+                Route::get('/getpendingdeliverysalesorder', [SalesController::class, 'getUserPendingDeliverySaleOrder']);
                 Route::get('/getusersalesorders', [SalesController::class, 'getUserSaleOrders']);
                 Route::get('/getretailerpendingsalesorder', [SalesController::class, 'getRetailerPendingSaleOrder']);
                 Route::get('/getdrivercurrentschedule', [SalesController::class, 'getDriverCurrentSchedule']);
@@ -263,6 +308,7 @@ Route::group(
                 Route::post('/validatedriverdeliverycode', [SalesController::class, 'validateDriverDeliveryCode']);
                 Route::post('/generateretailercustomercode', [SalesController::class, 'generateRetailerCustomerQRCode']);
                 Route::post('/validateRetailercustomerpickupcode', [SalesController::class, 'validateRetailerCustomerPickupCode']);
+                Route::post('/cancel-pending-sale-order', [SalesController::class, 'cancelPendingSaleOrder']);
             }
         );
     }
@@ -273,6 +319,7 @@ Route::group(['prefix' => '/driver'], function () {
     // Authentication
     Route::post('/register', [DriverController::class, 'register']);
     Route::post('/login', [DriverController::class, 'login']);
+    Route::post('/login-with-email', [DriverController::class, 'loginWithEmail']);
 
     Route::get('/all', [DriverController::class, 'allDrivers']);
     Route::get('/get/{id}', [DriverController::class, 'getDriver']);
@@ -307,4 +354,5 @@ Route::group(['prefix' => '/driver'], function () {
         Route::get('/app-settings', [DriverSettingsController::class, 'getDriverSetting']);
         Route::put('/app-settings', [DriverSettingsController::class, 'saveSettings']);
     });
+    
 });

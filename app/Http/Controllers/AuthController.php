@@ -603,6 +603,7 @@ class AuthController extends Controller
             'phone_number' => $data['phone_number'],
             'city' => '',
             'state' => '',
+            'rating'=>0,
             'zip_code' => '96788',
             'password' => Hash::make($data['password']),
             'created_by' => 1,
@@ -693,7 +694,7 @@ class AuthController extends Controller
                     'firstname' => 'required',
                     'lastname' => 'required',
                     'email' => 'required|email|unique:users,email',
-                    'phone_number' => 'required|phone|unique:users,phone_number',
+                    'phone_number' => 'required|phone',
                     'password' => 'required'
                 ]
             );
@@ -795,7 +796,7 @@ class AuthController extends Controller
                     'firstname' => 'required',
                     'lastname' => 'required',
                     'email' => 'required|email|unique:retailers,email',
-                    'phone_number' => 'required|phone|unique:retailers,phone_number',
+                    'phone_number' => 'required|phone',
                 ]
             );
 
@@ -836,6 +837,7 @@ class AuthController extends Controller
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
                 'password' => $password,
+                'rating'=>0,
                 'from_mobile' => 1,
                 'created_by' => 1,
                 'modified_by' => 1
@@ -884,6 +886,7 @@ class AuthController extends Controller
             $validateUser = Validator::make(
                 $request->all(),
                 [
+                    'email'=>'required',
                     'phone_number' => 'required',
                     'token' => 'required'
                 ]
@@ -897,6 +900,7 @@ class AuthController extends Controller
                 ], 400);
             }
             $token = $request->input('token');
+            $email = $request->input('email');
             $phoneNumber = $request->input('phone_number');
             $defaultAuth = Firebase::auth();
             $user_phone = "";
@@ -914,7 +918,7 @@ class AuthController extends Controller
                     "Phone number does not match token supplied, please resend OTP"
                 ], 400);
             }
-            if (!User::where('phone_number', $request->phone_number)->exists()) {
+            if (!User::where('phone_number', $request->phone_number)->where('email',$email)->exists()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'User record does not exist in our database, If you signed up as a retailer, kindly wait for the admin\'s approval.',
@@ -978,6 +982,19 @@ class AuthController extends Controller
         }
     }
 
+    function getPhoneFromEmail(Request $request){ //temporary hack
+        if($user = User::where('email',$request->email)->first()){
+            return response()->json([
+                'status' => true,
+                'data' => $user->phone_number
+            ], 200);
+        }
+        return response()->json([
+            'status' => false,
+            'message' => "Email does not exist in our records"
+        ], 500);
+    }
+
     /**
      * Login The User
      * @param Request $request
@@ -1018,6 +1035,68 @@ class AuthController extends Controller
             }
 
             $user = User::where('phone_number', $request->phone_number)->first();
+            $token = $user->createToken("API TOKEN")->plainTextToken;
+            $token = $this->strright($token);
+            Log::info("logging token: " . $token);
+            LoginToken::create([
+                'user_id' => $user->id,
+                'token' => Hash::make($token)
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'User Logged In Successfully',
+                'token' => $token,
+                "data" => $user
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => false,
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Login The User
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function loginUserEmail(Request $request)
+    {
+
+        try {
+            $validateUser = Validator::make(
+                $request->all(),
+                [
+                    'email' => 'required',
+                    'password' => 'required'
+                ]
+            );
+
+            if ($validateUser->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'validation error',
+                    'errors' => $validateUser->errors()
+                ], 400);
+            }
+
+            if (!User::where('email', $request->email)->exists()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User record does not exist in our database, If you signed up as a retailer, kindly wait for the admin\'s approval.',
+                ], 400);
+            }
+
+            if (!Auth::attempt($request->only(['email', 'password']))) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Email & Password does not match with our record.',
+                ], 400);
+            }
+
+            $user = User::where('email', $request->email)->first();
             $token = $user->createToken("API TOKEN")->plainTextToken;
             $token = $this->strright($token);
             Log::info("logging token: " . $token);

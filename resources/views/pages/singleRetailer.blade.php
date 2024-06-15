@@ -132,7 +132,7 @@
                                 </div>
                                 <div style="margin-top: 10%">
                                     <h3 class="font-weight-bold">Business Category:</h3>
-                                    <h5 class="text-black-50">{{$retailer->category->name}}</h5>
+                                    <h5 class="text-black-50">@if($retailer->category){{$retailer->category->name}}@endif</h5>
                                 </div>
                                 <div style="margin-top: 10%">
                                     <h3 class="font-weight-bold">Business Description:</h3>

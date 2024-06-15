@@ -36,6 +36,7 @@ class Retailer extends Authenticatable
         'banner_image',
         'password',
         'longitude',
+        'rating',
         'latitude',
         'island',
         'approval_status',

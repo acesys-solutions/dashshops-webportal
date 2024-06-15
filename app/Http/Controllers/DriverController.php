@@ -9,12 +9,14 @@ use App\Http\Resources\PaginationResource;
 use App\Http\Resources\RejectedDeliveryResource;
 use App\Http\Resources\TrackingResource;
 use App\Http\Resources\UserResource;
+use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Delivery;
 use App\Models\Driver;
 use App\Models\DriverToken;
 use App\Models\RejectedDelivery;
 use App\Models\Retailer;
+use App\Models\Sale;
 use App\Models\SaleOrder;
 use App\Models\State;
 use App\Models\Tracking;
@@ -142,6 +144,54 @@ class DriverController extends Controller
 
         // authenticate driver
         if (Auth::attempt(['phone_number' => $request->phone_number, 'password' => $request->password])) {
+            $token = Auth::user()->createToken('API TOKEN')->plainTextToken;
+
+            if (!Driver::where('user_id', Auth::id())->exists()) {
+                $driver = Driver::create([
+                    'user_id' => Auth::id(),
+                    'acceptance_rating' => [
+                        'total' => 0,
+                        'count' => 0
+                    ],
+                    'hourly_delivery_rate' => 0,
+                ]);
+            } else {
+                $driver = Driver::where('user_id', Auth::id())->first();
+            }
+            DriverToken::create([
+                'driver_id' => $driver->id,
+                'token' => Hash::make($this->strright($token))
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Driver logged in successfully',
+                'token' => $this->strright($token),
+                'data' => [
+                    'user' => new UserResource(Auth::user()),
+                    'driver' => new DriverResource($driver),
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Invalid login details'
+        ], 401);
+    }
+
+    /**
+     * Login a driver using email.
+     */
+    public function loginWithEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        // authenticate driver
+        if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             $token = Auth::user()->createToken('API TOKEN')->plainTextToken;
 
             if (!Driver::where('user_id', Auth::id())->exists()) {
@@ -642,6 +692,8 @@ class DriverController extends Controller
 
                     $sale_order->status = "Pending Pickup";
                     $sale_order->save();
+                    $driver->available = true;
+                    $driver->save();
                     // start tracking
                     $tracking = Tracking::create([
                         'delivery_id' => $delivery->id,
@@ -693,7 +745,7 @@ class DriverController extends Controller
     {
         $request->validate([
             'accept' => 'required|boolean',
-            'sales_id' => 'required|integer|unique:deliveries|exists:sales,id',
+            'sales_id' => 'required|integer',
             'delivery_fee' => 'required|numeric',
         ]);
         $notif = new \App\Http\Controllers\NotificationsController();
@@ -716,6 +768,7 @@ class DriverController extends Controller
                     'driver_id' => $driver->id,
                     'sales_id' => $request->sales_id,
                     'delivery_fee' => $request->delivery_fee,
+                    'status'=> $request->accept?"Pending":"Rejected"
                 ]);
                 $sale_order->status = "Pending Start";
                 $sale_order->save();
@@ -775,6 +828,20 @@ class DriverController extends Controller
                     "has_read" => false,
                     "trash" => false
                 ])));
+                $user_id = $sale_order->user_id;
+                $sale_order_id = $sale_order->id;
+                if ($sale_order = SaleOrder::with('sales')->with('driver')->find($sale_order_id)) {
+                    foreach ($sale_order->sales as $sale) {
+                        Cart::create([
+                            "user_id" => $user_id,
+                            "product_variation_id" => $sale->product_variation_id,
+                            "quantity" => $sale->quantity,
+                        ]);
+                    }
+                    Sale::whereIn('order_id', [$sale_order_id])->delete();
+                    $sale_order->delete();
+
+                }
             }
 
             $driver->save();

@@ -142,6 +142,7 @@ class ForgotPasswordController extends Controller
     public function resetPasswordFirebase(Request $request): JsonResponse
     {
         $request->validate([
+            'email'=>'required',
             'phone_number' => 'required',
             'password' => 'required|string|min:6|confirmed',
             'password_confirmation' => 'required',
@@ -149,6 +150,7 @@ class ForgotPasswordController extends Controller
         ]);
 
         $token = $request->input('token');
+        $email = $request->input('email');
         $phoneNumber = $request->input('phone_number');
         $defaultAuth = Firebase::auth();
         $user_phone = "";
@@ -166,14 +168,14 @@ class ForgotPasswordController extends Controller
                 "Phone number does not match token supplied, please resend OTP"
             ], 400);
         }
-        if (!User::where('phone_number', $request->phone_number)->exists()) {
+        if (!User::where(['phone_number'=> $request->phone_number,"email"=>$email])->exists()) {
             return response()->json([
                 'status' => false,
                 'message' => 'User record does not exist in our database, If you signed up as a retailer, kindly wait for the admin\'s approval.',
             ], 400);
         }
 
-        $user = User::where('phone_number', $phoneNumber)
+        $user = User::where(['phone_number'=> $phoneNumber,'email'=>$email])
             ->update(['password' => Hash::make($request->password)]);
 
 

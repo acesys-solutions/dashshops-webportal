@@ -140,8 +140,8 @@ $bEdit = false;
                                     <input type="hidden" id="base64_add_image" />
                                     <input type="file" class="form-control" id="addProductImage" style="visibility: hidden; position: absolute;" />
                                     <div class="d-flex">
-                                        <button class="btn bg-gradient-primary btn-sm mb-0 me-2" type="button" name="button" onclick="AddProductImage()">Add Image</button>
-                                        <!-- <button class="btn bg-gradient-primary btn-sm mb-0 me-2" type="button" name="button" onclick="ShowToastr()">Show Toastr</button> -->
+                                        <!--<button class="btn bg-gradient-primary btn-sm mb-0 me-2" type="button" name="button" onclick="AddProductImage()">Add Image</button>
+                                         <button class="btn bg-gradient-primary btn-sm mb-0 me-2" type="button" name="button" onclick="ShowToastr()">Show Toastr</button> -->
 
                                     </div>
                                 </div>
@@ -173,6 +173,13 @@ $bEdit = false;
 
                                     </div>
                                 </div>
+                                <!--<div class="row mt-4">
+                                    <div class="col-12 col-sm-12">
+                                        <label>Product Overview</label>
+                                        <textarea class="form-control" type="text" required id="txtProductOverview">{{$product->overview ?? ''}}</textarea>
+                                    </div>
+
+                                </div>-->
                                 <!--<div class="row">
                                     <div class="col-6">
                                         <label class="mt-4">Overview</label>

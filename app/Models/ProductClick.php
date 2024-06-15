@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ProductClick extends Model
 {
     use HasFactory;
-    protected $table = 'product_click';
+    protected $table = 'product_clicks';
 
     protected $fillable = [
         'product_id',

@@ -103,7 +103,7 @@ class ProductController extends Controller
                 if (Product::where(["id" => $request->id, "store_id" => $user->retailer_id])->exists()) {
                     $product = Product::where(["id" => $request->id, "store_id" => $user->retailer_id])->first();
                     //$product->status = $request->status;
-                    if($product->status == 0){
+                    if ($product->status == 0) {
                         $product->status = -1;
                     }
                     if ($request->has("image")) {
@@ -112,7 +112,7 @@ class ProductController extends Controller
                         }
                     }
                     $images = json_decode($request->images_to_delete, true);
-                    Log::info($images);
+                    //Log::info($images);
                     $existing_images = json_decode($product->images, true);
                     foreach ($images as $img) {
                         if (($key = array_search($img, $existing_images)) !== false) {
@@ -191,7 +191,7 @@ class ProductController extends Controller
                         "sale_price" => $v->sale_price,
                         "quantity" => $v->quantity,
                         "low_stock_value" => $v->low_stock_value,
-                        "status" => $v->status
+                        "status" => $product->status
 
                     ]);
                 } else {
@@ -205,7 +205,6 @@ class ProductController extends Controller
                         $pv->sale_price = $v->sale_price;
                         $pv->quantity = $v->quantity;
                         $pv->low_stock_value = $v->low_stock_value;
-                        $pv->status = $v->status;
                         $pv->save();
                     }
                 }
@@ -223,17 +222,61 @@ class ProductController extends Controller
             ], 500);
         }
     }
+    public function canAddToCart($id, $quantity, Request $request)
+    {
+        if ($pv = ProductVariant::with('product')->find($id)) {
+            if ($pv->quantity >= (int)$quantity) {
+                return response()->json([
+                    'status' => true
+                ], 200);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    "message" => "The retailer has only " . $pv->quantity . " items left in stock"
+                ], 200);
+            }
+        }
+    }
+    public function canPlaceOrder(Request $request)
+    {
+        $user = $request->user();
+        $products = DB::table('cart')
+            ->join('product_variation', 'product_variation.id', '=', 'cart.product_variation_id')
+            ->join('products', 'products.id', '=', 'product_variation.product_id')
+            ->join('retailers', 'retailers.id', '=', 'products.store_id')
+            ->join('categories', 'categories.id', '=', 'products.category_id')
+            ->select(DB::raw("cart.quantity, " . $this->getSelectDBRawCartDisplay()))
+            ->where('cart.user_id', '=', $user->id)
+            ->where('products.status', '=', 1)
+            ->where('product_variation.status', '=', 1);
+        $products = $products->groupBy("cart.id")
+            ->get();
+        foreach ($products as $product) {
+            if ($pv = ProductVariant::where('id', $product->product_variation_id)->where('quantity', '<=', $product->product_quantity)->first()) {
+                if ($pv->quantity < $product->product_quantity) {
+                    return response()->json([
+                        'status' => false,
+                        "message" => "The retailer has only " . $pv->quantity . " of ".$product->product_name." left in stock"
+                    ], 200);
+                }
+            }
+        }
+
+        return response()->json([
+            'status' => true
+        ], 200);
+    }
     public function getProduct($id)
     {
         $products = DB::table('product_variation')
             ->join('products', 'products.id', '=', 'product_variation.product_id')
             ->join('retailers', 'retailers.id', '=', 'products.store_id')
             ->join('categories', 'categories.id', '=', 'products.category_id')
-            ->select($this->getSelectDBRawProducts())
+            ->select(DB::raw($this->getSelectDBRawProducts()))
             ->where('products.id', '=', $id);
         $products = $products->first();
 
-        $pvs = ProductVariant::where('product_id', $id)->get();
+        $pvs = ProductVariant::where('product_id', $id)->where('status',1)->where('quantity','>',0)->get();
 
         return response()->json([
             "data" => ['product' => $products, 'variants' => $pvs]
@@ -247,13 +290,21 @@ class ProductController extends Controller
         ], 200);
     }
 
-    public function getrelevantproducts($count, $category = "0", $search = "")
+    public function getActiveProductVariants($product_id)
+    {
+        $pvs = ProductVariant::where('product_id', $product_id)->where('status', 1)->where('quantity','>',0)->get();
+        return response()->json([
+            "data" => $pvs
+        ], 200);
+    }
+
+    public function getrelevantproducts($count, $page = 1, $category = "0", $search = "")
     {
         $products = DB::table('product_variation')
             ->join('products', 'products.id', '=', 'product_variation.product_id')
             ->join('retailers', 'retailers.id', '=', 'products.store_id')
             ->join('categories', 'categories.id', '=', 'products.category_id')
-            ->select($this->getSelectDBRawProducts());
+            ->select(DB::raw($this->getSelectDBRawProducts()));
         if ($category != 0) {
             $products = $products->where('products.category_id', '=', $category);
         }
@@ -282,28 +333,31 @@ class ProductController extends Controller
         $products = $products->where('products.status', 1);
         $products = $products->where('product_variation.status', 1);
         $products = $products->where('retailers.approval_status', 'Approved')
-            ->groupBy("products.id");
-
-        $products = $products->get()->take($count);
+            ->groupBy("products.id")->orderBy('products.updated_at', 'desc');
+        $total = $products->get()->count();
+        $products = $products->skip($count * ($page - 1))->take($count)->get();
 
         return response()->json([
-            "data" => $products
+            "data" => $products,
+            "current_page" => $page,
+            "total" => $total
         ], 200);
     }
-    public function getrelevantproducts2($count, $category = "0", $city = "-", $state = "-", $search = "")
+    public function getrelevantproducts2($count, $page = 1, $category = "0", $city = "-", $state = "-", $search = "")
     {
+        // $state." =    ";
         $products = DB::table('product_variation')
             ->join('products', 'products.id', '=', 'product_variation.product_id')
             ->join('retailers', 'retailers.id', '=', 'products.store_id')
             ->join('categories', 'categories.id', '=', 'products.category_id')
-            ->select($this->getSelectDBRawProducts());
+            ->select(DB::raw($this->getSelectDBRawProducts()));
         if ($category != 0) {
             $products = $products->where('products.category_id', '=', $category);
         }
-        if ($city != "") {
+        if ($city != "-") {
             $products = $products->where('retailers.city', '=', $city);
         }
-        if ($state != "") {
+        if ($state != "-") {
             $products = $products->where('retailers.state', '=', $state);
         }
 
@@ -325,12 +379,15 @@ class ProductController extends Controller
         $products = $products->where('products.status', 1);
         $products = $products->where('product_variation.status', 1);
         $products = $products->where('retailers.approval_status', 'Approved')
-            ->groupBy("products.id");
+            ->groupBy("products.id")->orderBy('products.updated_at', 'desc');
+        $total = $products->get()->count();
 
-        $products = $products->get()->take($count);
+        $products = $products->skip($count * ($page - 1))->take($count)->get();
 
         return response()->json([
-            "data" => $products
+            "data" => $products,
+            "current_page" => $page,
+            "total" => $total
         ], 200);
     }
     public function showAll(Request $request)
@@ -403,7 +460,7 @@ class ProductController extends Controller
             $notif->setNotification(new \App\Models\Notification([
                 "user_id" => $product->retailer->user->id,
                 "title" => "Dash shop product has been suspended",
-                "content" => "Your product \"" . $product->product_name . "\", has been suspended by Dash shops for the following reason: ".$request->reason.". Kindly review and update the product listing.",
+                "content" => "Your product \"" . $product->product_name . "\", has been suspended by Dash shops for the following reason: " . $request->reason . ". Kindly review and update the product listing.",
                 "type" => "Product",
                 "source_id" => $product->id,
                 "has_read" => false,
@@ -427,7 +484,7 @@ class ProductController extends Controller
             ->join('products', 'products.id', '=', 'product_variation.product_id')
             ->join('retailers', 'retailers.id', '=', 'products.store_id')
             ->join('categories', 'categories.id', '=', 'products.category_id')
-            ->select($this->getSelectDBRawProducts());
+            ->select(DB::raw($this->getSelectDBRawProducts()));
         if ((int)$category != 0) {
             $products = $products->where('products.category_id', '=', $category);
         }
@@ -451,7 +508,7 @@ class ProductController extends Controller
             $products = $products->where('products.status', (int)$status);
             $products = $products->where('product_variation.status', (int)$status);
         }
-        $products = $products->groupBy("products.id");
+        $products = $products->groupBy("products.id")->orderBy('products.updated_at', 'desc');
         $products = $products->get();
         //echo json_encode($products);die();
         $view = view('pages.products-table', ["products" => $products]);

@@ -71,20 +71,20 @@ class UserController extends Controller
     {
         $users = User::all();
         $states = State::all();
-        $state = DB::table('users')
+        /*$state = DB::table('users')
             ->join('states', 'states.id', '=', 'users.state')
             ->select('users.id', 'users.firstname', 'states.name', 'states.abbreviation')
-            ->get();
+            ->get();*/
         $total_members = User::where('user_type', '=', 'Consumer')->count();
         $total_app_users = User::where('user_type', '=', 'Consumer')->get();
 
         $total_vip_users = DB::table('vips')
             ->join('users', 'users.id', '=', 'vips.user_id')
             ->select('users.*', 'vips.expiry_date', 'vips.updated_at as last_subscription')->get();
-        $total_sales_users = User::with('state')->where('admin', '=', 2)->get();
+        $total_sales_users = User::where('admin', '=', 2)->get();
         $total_vip = Vip::where('expiry_date', '>=', date('Y-m-d 23:59:59'))->count();
         $total_retailers = Retailer::count();
-        return view('pages.members', compact(['users', 'state', 'states', 'total_retailers', 'total_vip', 'total_members', 'total_app_users', 'total_vip_users', 'total_sales_users']));
+        return view('pages.members', compact(['users', 'states', 'total_retailers', 'total_vip', 'total_members', 'total_app_users', 'total_vip_users', 'total_sales_users']));
     }
 
     public function getAll()

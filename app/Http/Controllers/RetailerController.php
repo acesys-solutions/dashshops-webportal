@@ -8,6 +8,7 @@ use App\Models\CouponClicks;
 use App\Models\CouponDownloads;
 use App\Models\CouponRedeemed;
 use App\Models\Retailer;
+use App\Models\Sale;
 use App\Models\State;
 use App\Models\User;
 use App\Models\Vip;
@@ -309,6 +310,7 @@ class RetailerController extends Controller
         $retailer->zip_code = $request->zip_code;
         $retailer->web_url = $request->web_url;
         $retailer->banner_image = $imageName;
+        $retailer->rating = 0;
         $retailer->island = $this->getIslandFrCity($request->city);
         $retailer->approval_status = "New";
         $retailer->password = Hash::make($request->password);
@@ -383,7 +385,7 @@ class RetailerController extends Controller
 
         $retailers = $retailers->where('retailers.approval_status', 'Approved');
 
-        $retailers = $retailers->groupBy('retailers.id', 'retailers.business_name', 'retailers.business_address', 'retailers.business_description', 'retailers.firstname', 'retailers.lastname', 'retailers.phone_number', 'retailers.email', 'retailers.zip_code', 'retailers.city', 'retailers.state', 'retailers.type_of_business', 'retailers.business_hours_open', 'retailers.business_hours_close', 'retailers.web_url', 'retailers.banner_image', 'retailers.password', 'retailers.island', 'retailers.approval_status', 'retailers.approved_at', 'retailers.created_at', 'retailers.updated_at', 'retailers.created_by', 'retailers.modified_by', 'retailers.longitude', 'retailers.latitude', 'retailers.from_mobile', 'categories.name')
+        $retailers = $retailers->groupBy('retailers.id', 'retailers.business_name', 'retailers.rating', 'retailers.business_address', 'retailers.business_description', 'retailers.firstname', 'retailers.lastname', 'retailers.phone_number', 'retailers.email', 'retailers.zip_code', 'retailers.city', 'retailers.state', 'retailers.type_of_business', 'retailers.business_hours_open', 'retailers.business_hours_close', 'retailers.web_url', 'retailers.banner_image', 'retailers.password', 'retailers.island', 'retailers.approval_status', 'retailers.approved_at', 'retailers.created_at', 'retailers.updated_at', 'retailers.created_by', 'retailers.modified_by', 'retailers.longitude', 'retailers.latitude', 'retailers.from_mobile', 'categories.name')
             ->orderBy('click_count', 'desc')
             ->get()
             ->take($count);
@@ -395,11 +397,11 @@ class RetailerController extends Controller
 
     public function getPopularRetailersByIsland($count = 10, $page = 1, $category = 0, $island = "-", $city = "-", $state = "-", $search = "")
     {
-        $retailers = DB::table('coupons_clicks')
-            ->join('coupons', 'coupons.id', '=', 'coupons_clicks.coupon_id')
-            ->join('retailers', 'retailers.id', '=', 'coupons.retailer_id')
+        $retailers = DB::table('product_addtocarts')
+            ->join('products', 'products.id', '=', 'product_addtocarts.product_id')
+            ->join('retailers', 'retailers.id', '=', 'products.store_id')
             ->join('categories', 'categories.id', '=', 'retailers.type_of_business')
-            ->select(DB::raw('count(coupons_clicks.coupon_id) as click_count, retailers.*, categories.name as category_name'));
+            ->select(DB::raw('count(product_addtocarts.product_id) as click_count, retailers.*, categories.name as category_name'));
 
         if ($category != 0) {
             $retailers = $retailers->where('retailers.type_of_business', '=', $category);
@@ -438,7 +440,7 @@ class RetailerController extends Controller
 
         $retailers = $retailers->where('retailers.approval_status', 'Approved');
 
-        $retailers = $retailers->groupBy('retailers.id', 'retailers.business_name', 'retailers.business_address', 'retailers.business_description', 'retailers.firstname', 'retailers.lastname', 'retailers.phone_number', 'retailers.email', 'retailers.zip_code', 'retailers.city', 'retailers.state', 'retailers.type_of_business', 'retailers.business_hours_open', 'retailers.business_hours_close', 'retailers.web_url', 'retailers.banner_image', 'retailers.password', 'retailers.island', 'retailers.approval_status', 'retailers.approved_at', 'retailers.created_at', 'retailers.updated_at', 'retailers.created_by', 'retailers.modified_by', 'retailers.longitude', 'retailers.latitude', 'retailers.from_mobile', 'categories.name')
+        $retailers = $retailers->groupBy('retailers.id', 'retailers.business_name', 'retailers.rating', 'retailers.business_address', 'retailers.business_description', 'retailers.firstname', 'retailers.lastname', 'retailers.phone_number', 'retailers.email', 'retailers.zip_code', 'retailers.city', 'retailers.state', 'retailers.type_of_business', 'retailers.business_hours_open', 'retailers.business_hours_close', 'retailers.web_url', 'retailers.banner_image', 'retailers.password', 'retailers.island', 'retailers.approval_status', 'retailers.approved_at', 'retailers.created_at', 'retailers.updated_at', 'retailers.created_by', 'retailers.modified_by', 'retailers.longitude', 'retailers.latitude', 'retailers.from_mobile', 'categories.name')
             ->orderBy('click_count', 'desc')
             ->get()
             ->take($count);
@@ -455,6 +457,26 @@ class RetailerController extends Controller
             ->select(DB::raw('count(coupons_clicks.id) as clicks'))
             ->where('coupons.retailer_id', '=', $retail_id)->first();
 
+        $product_clicks = DB::table('product_clicks')
+            ->join('products', 'products.id', '=', 'product_clicks.product_id')
+            ->select(DB::raw('count(product_clicks.id) as count'))
+            ->where('products.store_id', '=', $retail_id)->first();
+
+        $product_cart_count = DB::table('product_addtocarts')
+            ->join('products', 'products.id', '=', 'product_addtocarts.product_id')
+            ->select(DB::raw('count(product_addtocarts.id) as count'))
+            ->where('products.store_id', '=', $retail_id)->first();
+
+        $sales_count = DB::table('sales')
+            ->join('products', 'products.id', '=', 'sales.product_id')
+            ->select(DB::raw('sum(sales.quantity) as count'))
+            ->where('products.store_id', '=', $retail_id)->first();
+
+        $sales = DB::table('sales')
+            ->join('products', 'products.id', '=', 'sales.product_id')
+            ->select(DB::raw('sum(sales.quantity*sales.unit_cost) as amount'))
+            ->where('products.store_id', '=', $retail_id)->first();
+
         $downloads = DB::table('coupons_download')
             ->join('coupons', 'coupons.id', '=', 'coupons_download.coupon_id')
             ->select(DB::raw('count(coupons_download.id) as downloads'))
@@ -469,7 +491,11 @@ class RetailerController extends Controller
             "data" => [
                 "clicks" => $clicks->clicks,
                 "downloads" => $downloads->downloads,
-                "redeems" => $redeems->redeems
+                "redeems" => $redeems->redeems,
+                "product_clicks" => $product_clicks->count,
+                "product_cart_count" => $product_cart_count->count,
+                "sales_count" => $sales_count->count,
+                "sales" => $sales->amount
             ]
         ], 200);
     }
@@ -666,7 +692,7 @@ class RetailerController extends Controller
             ->join('products', 'products.id', '=', 'product_variation.product_id')
             ->join('retailers', 'retailers.id', '=', 'products.store_id')
             ->join('categories', 'categories.id', '=', 'products.category_id')
-            ->select($this->getSelectDBRawProducts())
+            ->select(DB::raw($this->getSelectDBRawProducts()))
             ->where('products.store_id', '=', $retailer->id);
         if ($type != "all")
             $products = $products->where('products.status', '=', $type);
@@ -682,6 +708,7 @@ class RetailerController extends Controller
             "data" => $products
         ], 200);
     }
+
 
     public function show($id): JsonResponse
     {
@@ -778,7 +805,45 @@ class RetailerController extends Controller
             'banner_image' => $imageName
         ]);
 
-        return redirect()->route('retailer',['id'=>$id])->with('success', 'Retailer logo updated successfully');
+        return redirect()->route('retailer', ['id' => $id])->with('success', 'Retailer logo updated successfully');
+    }
+
+    public function cancelSaleOrderItem($id, Request $request)
+    {
+        $user = $request->user();
+        if ($sale_item = Sale::with('retailer')->with('sale_order')->find($id)) {
+            if ($sale_item->retailer->id == $user->retailer_id) {
+                $sale_item->status = "Cancelled By Retailer";
+                $sale_item->save();
+                $notif = new
+                    \App\Http\Controllers\NotificationsController();
+                try {
+                    Log::info($notif->setNotification(new \App\Models\Notification([
+                        "user_id" => $sale_item->sale_order->user_id,
+                        "title" => "Item from order #" . $sale_item->sale_order->order_number . " was just cancelled",
+                        "content" => "An Item from your order #" . $sale_item->sale_order->order_number . " was just can by the retailer.",
+                        "type" => "Sale Order",
+                        "source_id" => $sale_item->sale_order->id,
+                        "has_read" => false,
+                        "trash" => false
+                    ])));
+                } catch (\Exception $e) {
+                }
+                return response()->json([
+                    "status" => true,
+                ], 200);
+            } else {
+                return response()->json([
+                    "status" => false,
+                    "message" => "Only the retailer can cancel this item",
+                ], 400);
+            }
+        } else {
+            return response()->json([
+                "status" => false,
+                "message" => "Sale item was not found",
+            ], 404);
+        }
     }
 
     public function updateBanner(Request $request)
