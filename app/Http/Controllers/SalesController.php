@@ -619,6 +619,7 @@ class SalesController extends Controller
 
         try {
             $code = $this->decryptIt($request->qr_code);
+            //echo $code;die();
             $codes = explode("|", $code);
         } catch (\Exception $e) {
             return response()->json([
@@ -718,7 +719,7 @@ class SalesController extends Controller
                 ->select("sales.*")
                 ->where(['sale_orders.driver_id' => $driver->id, "sales.id" => $request->sale_id, "sales.status" => "picked up"])->first()
             ) {
-                $code = "delivery_code|" . $request->sale_id . "|" . $sale->sale_order->user->id;
+                $code = "delivery_code|" . $request->sale_id . "|" . $driver->id;
                 return response()->json([
                     'status' => true,
                     'data' => $this->encryptIt($code),

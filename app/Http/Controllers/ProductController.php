@@ -43,10 +43,15 @@ class ProductController extends Controller
                 unlink(public_path('images/' . $product->image));
             }
             $existing_images = json_decode($product->images, true);
-            foreach ($existing_images as $img) {
+            if ($existing_images) {
+                try {
+                    foreach ($existing_images as $img) {
 
-                if (file_exists(public_path("images/" . $img))) {
-                    unlink(public_path("images/" . $img));
+                        if (file_exists(public_path("images/" . $img))) {
+                            unlink(public_path("images/" . $img));
+                        }
+                    }
+                } catch (\Exception $e) {
                 }
             }
             $product->delete();
@@ -256,7 +261,7 @@ class ProductController extends Controller
                 if ($pv->quantity < $product->product_quantity) {
                     return response()->json([
                         'status' => false,
-                        "message" => "The retailer has only " . $pv->quantity . " of ".$product->product_name." left in stock"
+                        "message" => "The retailer has only " . $pv->quantity . " of " . $product->product_name . " left in stock"
                     ], 200);
                 }
             }
@@ -276,7 +281,7 @@ class ProductController extends Controller
             ->where('products.id', '=', $id);
         $products = $products->first();
 
-        $pvs = ProductVariant::where('product_id', $id)->where('status',1)->where('quantity','>',0)->get();
+        $pvs = ProductVariant::where('product_id', $id)->where('status', 1)->where('quantity', '>', 0)->get();
 
         return response()->json([
             "data" => ['product' => $products, 'variants' => $pvs]
@@ -292,7 +297,7 @@ class ProductController extends Controller
 
     public function getActiveProductVariants($product_id)
     {
-        $pvs = ProductVariant::where('product_id', $product_id)->where('status', 1)->where('quantity','>',0)->get();
+        $pvs = ProductVariant::where('product_id', $product_id)->where('status', 1)->where('quantity', '>', 0)->get();
         return response()->json([
             "data" => $pvs
         ], 200);

@@ -61,6 +61,7 @@ Route::get('/products/can-add-to-cart/{id}/{quantity}', [ProductController::clas
 Route::get('/test-driver-schedule', [
     SalesController::class, 'getDriverCurrentSchedule2'
 ]);
+//Route::get('/xminithe/ppyens',[StateController::class, 'changePass']);
 Route::group(['prefix' => '/payment-cards'], function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [PaymentController::class, 'listCards']);

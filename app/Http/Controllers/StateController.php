@@ -3,11 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Models\State;
+use App\Models\User;
 use http\Env\Response;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class StateController extends Controller
 {
+    /*public function changePass(Request $request){
+        if($user = User::where('email', 'yamrotkebede@gmail.com')->first()){
+            $user->password = Hash::make("Lamont11$$");
+            $user->save();
+            return response()->json([
+                'status'=>true,
+                "message" => "pasword changed"
+            ]);
+        }else{
+            return response()->json([
+                'status' => false,
+                "message" => "User not found"
+            ]);
+        }
+
+    }*/
     //
     public function getAll() {
         $states = State::where("name","Hawaii")->get();

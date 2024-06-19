@@ -7,8 +7,10 @@ use App\Models\Category;
 use App\Models\CouponClicks;
 use App\Models\CouponDownloads;
 use App\Models\CouponRedeemed;
+use App\Models\Delivery;
 use App\Models\Retailer;
 use App\Models\Sale;
+use App\Models\SaleOrder;
 use App\Models\State;
 use App\Models\User;
 use App\Models\Vip;
@@ -811,17 +813,58 @@ class RetailerController extends Controller
     public function cancelSaleOrderItem($id, Request $request)
     {
         $user = $request->user();
+        $notif = new
+            \App\Http\Controllers\NotificationsController();
         if ($sale_item = Sale::with('retailer')->with('sale_order')->find($id)) {
             if ($sale_item->retailer->id == $user->retailer_id) {
                 $sale_item->status = "Cancelled By Retailer";
                 $sale_item->save();
-                $notif = new
-                    \App\Http\Controllers\NotificationsController();
+                if ($sale_item = Sale::where("id", $id)->where("status", '<>', 'Cancelled By Retailer')->first()) {
+                    //
+                } else {
+                    if ($sale_order = SaleOrder::find($sale_item->order_id)) {
+                        $sale_order->status = "Cancelled";
+                        $sale_order->save();
+                        if (filter_var($request->is_store_pickup, FILTER_VALIDATE_BOOLEAN)) {
+                            try {
+                                Log::info($notif->setNotification(new \App\Models\Notification([
+                                    "user_id" => $sale_order->user_id,
+                                    "title" => "Order #" . $sale_order->order_number . " was just cancelled",
+                                    "content" => "Your order #" . $sale_item->sale_order->order_number . " has been cancelled.",
+                                    "type" => "Sale Order",
+                                    "source_id" => $sale_order->id,
+                                    "has_read" => false,
+                                    "trash" => false
+                                ])));
+                            } catch (\Exception $e) {
+                            }
+                        } else {
+                            if($delivery = Delivery::where('sale_id', $sale_order->id)->first()){
+                                $delivery->status = "Cancelled";
+                                $delivery->save();
+                            }
+                            try {
+                                Log::info($notif->setDriverNotification(new \App\Models\DriverNotification([
+                                    "driver_id" => $sale_order->driver_id,
+                                    "title" => "Delivery order #" . $sale_order->order_number . " was just cancelled",
+                                    "content" => "Your delivery with order number #" . $sale_item->sale_order->order_number . " has been cancelled.",
+                                    "type" => "Sale Order",
+                                    "source_id" => $sale_order->id,
+                                    "has_read" => false,
+                                    "trash" => false
+                                ])));
+                            } catch (\Exception $e) {
+                            }
+                        }
+                    }
+                }
+
+
                 try {
                     Log::info($notif->setNotification(new \App\Models\Notification([
                         "user_id" => $sale_item->sale_order->user_id,
                         "title" => "Item from order #" . $sale_item->sale_order->order_number . " was just cancelled",
-                        "content" => "An Item from your order #" . $sale_item->sale_order->order_number . " was just can by the retailer.",
+                        "content" => "An Item from your order #" . $sale_item->sale_order->order_number . " was just cancelled by the retailer.",
                         "type" => "Sale Order",
                         "source_id" => $sale_item->sale_order->id,
                         "has_read" => false,
